@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv6 címzés és SLAAC – Teljes kifejtett tananyag</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .document {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.12);
+            padding: 45px 50px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: #0b3b4f;
+            border-bottom: 3px solid #1e6f5c;
+            display: inline-block;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.7rem;
+            margin: 1.8rem 0 1rem;
+            color: #1e6f5c;
+            border-left: 5px solid #1e6f5c;
+            padding-left: 20px;
+        }
+        h3 {
+            font-size: 1.3rem;
+            margin: 1.3rem 0 0.6rem;
+            color: #2c5282;
+        }
+        h4 {
+            font-size: 1.1rem;
+            margin: 1rem 0 0.4rem;
+            color: #2d3748;
+        }
+        .badge {
+            background: #1e6f5c;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 40px;
+            padding: 4px 12px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid #cad2db;
+            padding: 10px 12px;
+            vertical-align: top;
+        }
+        th {
+            background: #eef2f5;
+            font-weight: 600;
+        }
+        code {
+            background: #f0f2f5;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            color: #c44536;
+        }
+        pre {
+            background: #1e2a36;
+            color: #f0f3f8;
+            padding: 16px;
+            border-radius: 14px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin: 20px 0;
+        }
+        hr {
+            margin: 40px 0;
+            border: none;
+            border-top: 2px dashed #bdd3e8;
+        }
+        ul, ol {
+            margin: 10px 0 10px 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fef7e0;
+            border-left: 5px solid #f3b33d;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .tip {
+            background: #e0f2fe;
+            border-left: 5px solid #0284c7;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        @media (max-width: 700px) {
+            .document {
+                padding: 20px;
+            }
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+    <h1>IPv6 címzés és dinamikus címkiosztás (SLAAC)<br>Teljes, kifejtett tananyag – 10 óra</h1>
+    <p><strong>Készítette:</strong> Szakmai informatikai oktató (20+ év tapasztalat)<br>
+    <strong>Célcsoport:</strong> 11–12. évfolyamos technikumi tanulók<br>
+    <strong>Előfeltétel:</strong> IPv4 alapismeretek (címzés, subnetting, alap routing, DHCP)<br>
+    <strong>Környezet:</strong> Cisco Packet Tracer / valós eszközök (Cisco, Linux/Windows)<br>
+    <strong>Időkeret:</strong> 10 × 45 perc (5 blokk, blokkonként 2 tanóra)</p>
+
+    <hr>
+
+    <h2>Tartalomjegyzék</h2>
+    <ul>
+        <li>Áttekintő óraterv</li>
+        <li>1. blokk – Bevezetés, címzés alapjai (2×45’) – részletes kifejtés</li>
+        <li>2. blokk – Címtípusok és alhálózatképzés (2×45’) – részletes kifejtés</li>
+        <li>3. blokk – Duál stack, statikus IPv6 routing (2×45’) – részletes kifejtés</li>
+        <li>4. blokk – SLAAC mélyen (2×45’) – részletes kifejtés</li>
+        <li>5. blokk – Összefoglaló gyakorlat és mérés (2×45’) – részletes kifejtés</li>
+        <li>Mellékletek – parancsok, hibakeresés, értékelő ív, táblai vázlat</li>
+    </ul>
+
+    <hr>
+
+    <h2>Áttekintő óraterv</h2>
+    <table>
+        <thead><tr><th>Blokk</th><th>Témák</th><th>Gyakorlati tevékenység</th></tr></thead>
+        <tbody>
+            <tr><td><strong>1.</strong></td><td>IPv6 szükségessége, cím felépítése, tömörítés/kiterjesztés</td><td>Feladatlap, kézi tömörítés</td></tr>
+            <tr><td><strong>2.</strong></td><td>Címtípusok (GUA, ULA, LLA, multicast), prefixek, alhálózatképzés</td><td>Alhálózati tervezés, Link-Local vizsgálat</td></tr>
+            <tr><td><strong>3.</strong></td><td>Duál stack, router/PC konfig, ping6, statikus IPv6 routing</td><td>Két router, négy PC összekötése, ping, traceroute</td></tr>
+            <tr><td><strong>4.</strong></td><td>SLAAC működése (RS, RA, NDP), EUI-64, véletlen címek, DAD</td><td>Router SLAAC konfig, PC automatikus címzése, Wireshark</td></tr>
+            <tr><td><strong>5.</strong></td><td>Komplex gyakorlat (3 router, SLAAC + statikus) + összefoglaló mérés</td><td>Teljes hálózat építése, bemutató, teszt</td></tr>
+        </tbody>
+    </table>
+
+    <hr>
+
+    <h2>1. blokk – Bevezetés, címzés alapjai (2×45’) – Részletes kifejtés</h2>
+
+    <h3>📘 1. óra: Miért van szükség IPv6-ra?</h3>
+    <ul>
+        <li>IPv4 kimerülése (IANA 2011, RIR-ek kimerülése), NAT és CGNAT hátrányai (játékok, P2P, port forwarding).</li>
+        <li>IPv6 előnyei: 2<sup>128</sup> cím („atomokra is jut”), nincs szükség NAT-re, egyszerűbb fejrész, beépített IPsec, SLAAC.</li>
+        <li>Tévhitek eloszlatása: „bonyolult” → valójában logikusabb; „nem kompatibilis” → duál stack; „lassabb” → routerek kevesebb számítást végeznek.</li>
+        <li>Gyakorlati motiváció: IoT, 5G, okosotthon – minden eszköz kaphat egyedi globális címet.</li>
+    </ul>
+
+    <h3>✏️ 2. óra: IPv6 cím felépítése, rövidítés, tömörítés</h3>
+    <ul>
+        <li>128 bit = 8×16 bit → 8 darab hexa csoport kettősponttal (pl. <code>2001:0db8:85a3:0000:0000:8a2e:0370:7334</code>).</li>
+        <li>Rövidítési szabályok: (1) vezető nullák elhagyása, (2) <code>::</code> egyszeri használata (csak a leghosszabb nullblokkra).</li>
+        <li>Speciális címek: <code>::1</code> (loopback), <code>::</code> (meghatározatlan), <code>::ffff:192.0.2.1</code> (IPv4 leképzett).</li>
+    </ul>
+    <p><strong>Gyakorló feladatlap (minta):</strong></p>
+    <table>
+        <thead><tr><th>Eredeti cím</th><th>Tömörített cím</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>2001:0db8:0000:0000:0000:0000:0000:0001</code></td><td><code>2001:db8::1</code></td></tr>
+            <tr><td><code>fe80:0000:0000:0000:0200:ff:fe00:1234</code></td><td><code>fe80::200:ff:fe00:1234</code></td></tr>
+            <tr><td><code>ff02:0000:0000:0000:0000:0000:0000:0002</code></td><td><code>ff02::2</code></td></tr>
+            <tr><td><code>2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></td><td><code>2001:db8:85a3::8a2e:370:7334</code></td></tr>
+        </tbody>
+    </table>
+    <div class="note"><strong>🏠 Házi feladat:</strong> Tömörítsd a saját IPv4 címedet IPv4-leképezett formátumba (<code>::ffff:192.168.1.100</code>), majd tömörítsd tovább!</div>
+
+    <hr>
+
+    <h2>2. blokk – Címtípusok és alhálózatképzés (2×45’) – Részletes kifejtés</h2>
+
+    <h3>🎯 3. óra: IPv6 címtípusok</h3>
+    <ul>
+        <li><strong>Unicast:</strong> Global Unicast (<code>2000::/3</code>), Unique Local (<code>fd00::/8</code>), Link-Local (<code>fe80::/10</code>).</li>
+        <li><strong>Anycast:</strong> egy a legközelebbihez (pl. root DNS szerverek).</li>
+        <li><strong>Multicast:</strong> <code>ff00::/8</code> – fontos csoportok: <code>ff02::1</code> (minden node), <code>ff02::2</code> (minden router).</li>
+        <li>Link-Local címek automatikus létrejötte (<code>ipv6 enable</code>), szerepük: alapértelmezett gateway, RA-k küldése.</li>
+        <li><strong>Bemutató:</strong> <code>ipconfig</code> / <code>ip -6 addr show</code> – a <code>fe80::/64</code> cím megfigyelése.</li>
+    </ul>
+
+    <h3>📐 4. óra: Prefixek és alhálózatképzés</h3>
+    <ul>
+        <li>CIDR jelölés, ajánlott /64 a legtöbb LAN-ban (SLAAC és EUI-64 miatt).</li>
+        <li>Számítás: <code>2<sup>(új_prefix - régi_prefix)</sup></code> alhálózat. Példa: /48-ból /64 → 2<sup>16</sup> = 65536 alhálózat.</li>
+        <li>Alhálózati tervező táblázat kitöltése (gyakorlati feladat).</li>
+    </ul>
+    <p><strong>Alhálózati tervező táblázat (minta):</strong> <code>2001:db8:abcd::/48</code> → első /64-ek</p>
+    <table>
+        <thead><tr><th>#</th><th>/64 prefix</th><th>Hálózati cím</th><th>Gateway (::1)</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td><code>2001:db8:abcd::/64</code></td><td><code>2001:db8:abcd::</code></td><td><code>2001:db8:abcd::1</code></td></tr>
+            <tr><td>1</td><td><code>2001:db8:abcd:1::/64</code></td><td><code>2001:db8:abcd:1::</code></td><td><code>2001:db8:abcd:1::1</code></td></tr>
+            <tr><td>2</td><td><code>2001:db8:abcd:2::/64</code></td><td><code>2001:db8:abcd:2::</code></td><td><code>2001:db8:abcd:2::1</code></td></tr>
+        </tbody>
+    </table>
+    <div class="note"><strong>🏠 Házi feladat:</strong> Tervezz 8 különböző /64-es alhálózatot a <code>2a01:1234:abcd::/48</code> tartományból.</div>
+
+    <hr>
+
+    <h2>3. blokk – Duál stack, statikus IPv6 routing (2×45’) – Részletes kifejtés</h2>
+
+    <h3>⚙️ 5. óra: Duál stack konfigurálása (routerek, PC-k)</h3>
+    <ul>
+        <li>Duál stack = IPv4 + IPv6 együtt fut, az alkalmazás preferenciája (RFC 6724 – „Happy Eyeballs”).</li>
+        <li>Topológia: R1 – R2 pont-pont; R1-hez PC1, R2-höz PC2.</li>
+        <li>Router konfiguráció (Cisco): <code>ipv6 unicast-routing</code>, interfészen <code>ipv6 enable</code> és statikus cím.</li>
+        <li>PC-k beállítása statikus IPv6 címmel és alapértelmezett útvonallal (Windows/Linux).</li>
+    </ul>
+    <pre>R1 (Cisco):
+enable
+configure terminal
+ipv6 unicast-routing
+interface g0/0
+ ip address 10.0.1.1 255.255.255.0
+ ipv6 enable
+ ipv6 address 2001:db8:1::1/64
+ no shutdown
+interface g0/1
+ ip address 10.0.12.1 255.255.255.0
+ ipv6 enable
+ ipv6 address 2001:db8:12::1/64
+ no shutdown
+
+PC1 (Windows):
+netsh interface ip set address "Ethernet0" static 10.0.1.2 255.255.255.0 10.0.1.1
+netsh interface ipv6 set address "Ethernet0" static 2001:db8:1::2/64
+netsh interface ipv6 add route ::/0 "Ethernet0" 2001:db8:1::1</pre>
+
+    <h3>🌐 6. óra: Ping6, traceroute6, statikus routing</h3>
+    <ul>
+        <li>Ellenőrzés: <code>ping 2001:db8:12::2</code> (közvetlen), <code>tracert -6</code> / <code>traceroute6</code>.</li>
+        <li>Statikus útvonalak: <code>ipv6 route 2001:db8:2::/64 2001:db8:12::2</code> (R1-en) és vissza R2-n.</li>
+        <li>Hibakeresés: <code>show ipv6 route</code>, <code>show ipv6 neighbors</code>, <code>debug ipv6 icmp</code> (csak tesztre).</li>
+    </ul>
+    <div class="tip"><strong>💡 Tipp:</strong> A pont-pont kapcsolatokon érdemes a /127 prefixet is megemlíteni (RFC 6164), de a tantervben a /64 marad az egyszerűség kedvéért.</div>
+    <div class="note"><strong>🏠 Házi feladat:</strong> Bővítsd a topológiát R3-mal és PC3-mal, add meg a szükséges statikus útvonalakat!</div>
+
+    <hr>
+
+    <h2>4. blokk – SLAAC mélyen (2×45’) – Részletes kifejtés</h2>
+
+    <h3>🧠 7. óra: SLAAC elmélet és folyamata</h3>
+    <ul>
+        <li>Stateless Address Autoconfiguration – automatikus, állapotmentes címzés, nem igényel DHCP szervert.</li>
+        <li>Lépések: Link-Local generálása → DAD → RS → RA → GUA előállítása + DAD ismét.</li>
+        <li>ICMPv6 típusok: RS (133), RA (134), NS (135), NA (136).</li>
+        <li>EUI-64 címképzés (MAC-ból 64 bit, <code>FFFE</code> beillesztés, bit invertálás) és véletlen címek (RFC 7217, adatvédelem).</li>
+        <li>RA flag-ek: A (autonomous), M (managed), O (other) – kombinációk: tiszta SLAAC, SLAAC + állapotmentes DHCPv6, állapotfüggő DHCPv6.</li>
+    </ul>
+
+    <h3>🔧 8. óra: SLAAC konfigurálás és ellenőrzés (gyakorlat)</h3>
+    <ul>
+        <li>Routeren: <code>ipv6 unicast-routing</code> + interfészen /64 cím (RA automatikusan megy).</li>
+        <li>PC beállítása automatikus címzésre: Windows: <code>netsh int ipv6 set interface "Eth" routerdiscovery=enabled</code> + <code>ipconfig /renew6</code>; Linux: <code>sysctl net.ipv6.conf.eth0.accept_ra=1</code>.</li>
+        <li>Ellenőrzés: <code>ip -6 addr show</code>, alapértelmezett útvonal a router Link-Local címére mutat.</li>
+        <li>Wireshark / tcpdump bemutató: RS, RA, NS, NA csomagok rögzítése.</li>
+    </ul>
+    <pre>Router (Cisco):
+ipv6 unicast-routing
+interface g0/0
+ ipv6 enable
+ ipv6 address 2001:db8:1::1/64
+ no shutdown
+
+PC (Windows):
+netsh interface ipv6 set interface "Ethernet0" routerdiscovery=enabled
+ipconfig /release6
+ipconfig /renew6
+ipconfig   # ellenőrzés</pre>
+    <div class="tip"><strong>🔍 Megfigyelés:</strong> A modern OS-ek (Windows 10+, Android, macOS) alapértelmezetten véletlen (RFC 7217) interfész azonosítót használnak az adatvédelem érdekében.</div>
+
+    <hr>
+
+    <h2>5. blokk – Összefoglaló gyakorlat és mérés (2×45’) – Részletes kifejtés</h2>
+
+    <h3>🏆 9. óra: Komplex gyakorlati feladat (3 router, SLAAC + statikus)</h3>
+    <p><strong>Topológia:</strong> R1 – R2 – R3 ; LAN1 (R1) – PC_A, PC_B ; LAN2 (R3) – PC_C, PC_D.</p>
+    <p><strong>IPv6 címzési terv:</strong></p>
+    <ul>
+        <li>R1–R2 pont-pont: <code>2001:db8:ab::/64</code> (R1: ::1, R2: ::2)</li>
+        <li>R2–R3 pont-pont: <code>2001:db8:bc::/64</code> (R2: ::1, R3: ::2)</li>
+        <li>LAN1 (R1): <code>2001:db8:1::/64</code> – R1 gateway: ::1, PC_A, PC_B <strong>SLAAC</strong></li>
+        <li>LAN2 (R3): <code>2001:db8:3::/64</code> – R3 gateway: ::1, PC_C: <code>::10</code>, PC_D: <code>::11</code> (statikus)</li>
+    </ul>
+    <ol>
+        <li>Routerek interfészeinek konfigurálása (IPv4 opcionális).</li>
+        <li><code>ipv6 unicast-routing</code> bekapcsolása minden routeren.</li>
+        <li>Statikus IPv6 útvonalak: R1 → R3 felé a megfelelő next-hop-okkal, R3 → R1 felé vissza.</li>
+        <li>SLAAC beállítása a LAN1-en: PC_A és PC_B automatikus címzés, ellenőrzés.</li>
+        <li>PC_C és PC_D statikus címeinek beállítása (pl. <code>2001:db8:3::10/64</code>).</li>
+        <li>Ping tesztek: PC_A → PC_C, PC_B → PC_D, PC_A → R2 link-local címe.</li>
+        <li>Screenshot készítése: <code>show ipv6 route</code> (R1) és <code>ip -6 addr show</code> (PC_A).</li>
+    </ol>
+    <p><strong>Pontozás (100 pont):</strong> Router interfész (15) + routing bekapcsolás (5) + statikus útvonal (20) + SLAAC (15) + statikus PC (10) + ping tesztek (15) + screenshot (10) + elméleti kérdések (10).</p>
+
+    <h3>📢 10. óra: Bemutatás, hibaelhárítás, értékelés</h3>
+    <ul>
+        <li>2-3 csapat bemutatja a megoldását (5 perc/csapat): topológia, statikus útvonalak, SLAAC-os PC-k címei, sikeres ping.</li>
+        <li>Közös hibaelhárítás: a tanár kivetít egy előre elrontott konfigurációt (pl. hiányzó <code>ipv6 unicast-routing</code>, RA suppress, rossz statikus útvonal). A diákok azonosítják a hibákat.</li>
+        <li>Írásbeli gyorsteszt (5-10 kérdés – lásd a mintát a mellékletben).</li>
+        <li>Értékelés, jegyek közlése, záró gondolatok (továbblépési lehetőségek: DHCPv6, OSPFv3).</li>
+    </ul>
+    <div class="note"><strong>✍️ Teszt mintakérdések:</strong><br>
+    1. Tömörítsd: <code>2001:0db8:0000:0000:0000:0000:0000:0001</code> → <code>2001:db8::1</code><br>
+    2. Melyik prefix jelöli a Link-Local címeket? → <code>fe80::/10</code><br>
+    3. Milyen ICMPv6 típus a Router Advertisement? → 134<br>
+    4. Mi a DAD célja? → Címütközés elkerülése (Duplicate Address Detection)<br>
+    5. Hány bit az EUI-64-ben a MAC címből képzett rész? → 64 bit</div>
+
+    <hr>
+
+    <h2>Mellékletek – gyors referencia</h2>
+
+    <h3>📌 Parancsgyűjtemény (kiosztható segédlet)</h3>
+    <table>
+        <thead><tr><th>Platform</th><th>Tevékenység</th><th>Parancs</th></tr>
+        </thead>
+        <tbody>
+            <tr><td rowspan="5">Cisco</td><td>IPv6 routing engedélyezése</td><td><code>ipv6 unicast-routing</code></td></tr>
+            <tr><td>Statikus cím interfészen</td><td><code>ipv6 address &lt;cím&gt;/&lt;prefix&gt;</code></td></tr>
+            <tr><td>Statikus útvonal</td><td><code>ipv6 route &lt;cél/prefix&gt; &lt;next-hop&gt;</code></td></tr>
+            <tr><td>RA ellenőrzése</td><td><code>show ipv6 interface</code></td></tr>
+            <tr><td>NDP cache</td><td><code>show ipv6 neighbors</code></td></tr>
+            <tr><td rowspan="4">Windows</td><td>Statikus IPv6 cím</td><td><code>netsh int ipv6 set address "Eth" static &lt;cím&gt;</code></td></tr>
+            <tr><td>Alapértelmezett útvonal</td><td><code>netsh int ipv6 add route ::/0 "Eth" &lt;gw&gt;</code></td></tr>
+            <tr><td>SLAAC bekapcsolása</td><td><code>netsh int ipv6 set interface "Eth" routerdiscovery=enabled</code></td></tr>
+            <tr><td>Cím frissítése</td><td><code>ipconfig /renew6</code></td></tr>
+            <tr><td rowspan="4">Linux</td><td>Statikus cím</td><td><code>ip -6 addr add &lt;cím&gt;/&lt;prefix&gt; dev eth0</code></td></tr>
+            <tr><td>Alapértelmezett útvonal</td><td><code>ip -6 route add default via &lt;gw&gt;</code></td></tr>
+            <tr><td>SLAAC bekapcsolása</td><td><code>sysctl -w net.ipv6.conf.eth0.accept_ra=1</code></td></tr>
+            <tr><td>Címek listázása</td><td><code>ip -6 addr show</code></td></tr>
+        </tbody>
+    </table>
+
+    <h3>🛠️ Hibakeresési táblázat</h3>
+    <table>
+        <thead><tr><th>Probléma</th><th>Valószínű ok</th><th>Javítás</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>A PC csak link-local címet kap</td><td>Router nem küld RA-t</td><td><code>ipv6 unicast-routing</code> hiányzik; RA suppress letiltása</td></tr>
+            <tr><td>Ping nem megy távoli PC-re</td><td>Nincs alapértelmezett útvonal a PC-n</td><td>Ellenőrizd a routing táblát, adj hozzá kézzel vagy javítsd az RA-t</td></tr>
+            <tr><td>DAD hiba (duplicate address)</td><td>Két eszköz ugyanazt a címet használja</td><td>Cím flush, újragenerálás</td></tr>
+            <tr><td><code>show ipv6 route</code> nem mutat közvetlen hálózatokat</td><td>Interfészen nincs IPv6 cím vagy nincs <code>ipv6 enable</code></td><td>Cím hozzáadása, IPv6 engedélyezése</td></tr>
+        </tbody>
+    </table>
+
+    <h3>📋 Értékelő ív (nyomtatható)</h3>
+    </table>
+        <thead><tr><th>Név</th><th>Router interfész (15)</th><th>Routing be (5)</th><th>Statikus útvonal (20)</th><th>SLAAC (15)</th><th>Statikus PC (10)</th><th>Ping (15)</th><th>Screenshot (10)</th><th>Elmélet (10)</th><th>Össz (100)</th><th>Jegy</th></tr>
+        </thead>
+        <tbody><tr><td colspan="11" style="text-align:center;">(hallgatók nevei, pontok beírva)</td></tr>
+        </tbody>
+    </table>
+    <p><strong>Jegyhatárok:</strong> 0–49 elégtelen, 50–64 elégséges, 65–74 közepes, 75–84 jó, 85–100 jeles.</p>
+
+    <h3>🧑‍🏫 Táblai vázlat (oktatói segédlet – 1. blokk)</h3>
+    <pre>
+IPv6 cím: 128 bit = 16 bájt = 32 hexa
+Forma: XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX
+
+Példa:
+2001:0db8:85a3:0000:0000:8a2e:0370:7334
+
+Rövidítés:
+1. Vezető nullák elhagyása → 2001:db8:85a3:0:0:8a2e:370:7334
+2. Egymás utáni nullás mezők tömörítése (::) → 2001:db8:85a3::8a2e:370:7334
+
+Szabály: :: csak egyszer!
+Speciális:
+::1          = localhost
+::           = meghatározatlan
+::ffff:192.0.2.1 = IPv4 leképzett
+    </pre>
+
+    <hr>
+    <p><strong>Záró megjegyzés:</strong> Ez a dokumentum az összes kifejtett blokkot (1–5.) tartalmazza, a gyakorlati feladatokkal, hibakereséssel és értékelési sablonokkal együtt. Sikeres alkalmazásához elengedhetetlen a Packet Tracer / valós eszközök használata. A konzolos gyakorlatok biztosítják a mély megértést. Jó tanítást kíván a 20+ éves tapasztalatú oktató!</p>
+</div>
+</body>
+</html>

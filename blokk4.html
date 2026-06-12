@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv6 tananyag – 4. blokk: SLAAC mélyen (teljes, részletes kifejtés)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .document {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.12);
+            padding: 45px 50px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: #0b3b4f;
+            border-bottom: 3px solid #1e6f5c;
+            display: inline-block;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.7rem;
+            margin: 1.8rem 0 1rem;
+            color: #1e6f5c;
+            border-left: 5px solid #1e6f5c;
+            padding-left: 20px;
+        }
+        h3 {
+            font-size: 1.4rem;
+            margin: 1.3rem 0 0.6rem;
+            color: #2c5282;
+        }
+        h4 {
+            font-size: 1.1rem;
+            margin: 1rem 0 0.4rem;
+            color: #2d3748;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid #cad2db;
+            padding: 10px 12px;
+            vertical-align: top;
+        }
+        th {
+            background: #eef2f5;
+            font-weight: 600;
+        }
+        code {
+            background: #f0f2f5;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            color: #c44536;
+        }
+        pre {
+            background: #1e2a36;
+            color: #f0f3f8;
+            padding: 16px;
+            border-radius: 14px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin: 20px 0;
+        }
+        hr {
+            margin: 40px 0;
+            border: none;
+            border-top: 2px dashed #bdd3e8;
+        }
+        ul, ol {
+            margin: 10px 0 10px 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fef7e0;
+            border-left: 5px solid #f3b33d;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .tip {
+            background: #e0f2fe;
+            border-left: 5px solid #0284c7;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .time-slot {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+        @media (max-width: 700px) {
+            .document {
+                padding: 20px;
+            }
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+    <h1>IPv6 címzés és dinamikus címkiosztás (SLAAC)<br>4. blokk – SLAAC mélyen</h1>
+    <p><strong>Részletes, percre bontott tanmenet</strong> – 2 × 45 perc (teljes kifejtés)<br>
+    <strong>Készítette:</strong> Szakmai informatikai oktató (20+ év tapasztalat)<br>
+    <strong>Célcsoport:</strong> 11–12. évfolyamos technikumi tanulók<br>
+    <strong>Környezet:</strong> Packet Tracer (vagy valós eszközök), Wireshark (opcionális), parancssor (Windows/Linux)</p>
+
+    <hr>
+
+    <h2>7. tanóra – SLAAC elmélet és folyamata <span class="time-slot">45 perc</span></h2>
+
+    <h3>🔄 0–5 perc: Ismétlés és ráhangolódás</h3>
+    <ul>
+        <li>Kérdés: <em>„Hogyan adtunk eddig IPv6 címet a PC-knek?”</em> → Statikusan, kézzel megadtuk a GUA-t és a gateway-t.</li>
+        <li><em>„Mi lenne, ha 1000 PC-t kellene címkéznünk egy irodában? Vagy ha egy okosizzót akarunk a hálózatra dugni?”</em> → Kell egy automatikus módszer.</li>
+        <li>Bejelentés: <em>„Az IPv6-ban van egy beépített automatikus címzési eljárás, ami nem igényel szervert. Ezt hívják SLAAC-nak.”</em></li>
+    </ul>
+
+    <h3>🧠 5–20 perc: SLAAC működése – lépésről lépésre</h3>
+    <ul>
+        <li><strong>Definíció:</strong> Stateless Address Autoconfiguration – állapotmentes automatikus címkonfiguráció. A host saját maga generálja a címét, nincs központi naplózás.</li>
+        <li><strong>Szükséges összetevők:</strong>
+            <ul>
+                <li>A hálózaton lévő router képes RA (Router Advertisement) üzeneteket küldeni.</li>
+                <li>A host képes fogadni az RA-t és előállítani a címet.</li>
+            </ul>
+        </li>
+        <li><strong>A folyamat részletesen:</strong>
+            <ol>
+                <li><strong>Link-Local cím generálása:</strong> A host minden interfészén automatikusan létrejön egy <code>fe80::/64</code> cím (általában EUI-64 vagy véletlen).</li>
+                <li><strong>DAD (Duplicate Address Detection):</strong> A host elküld egy Neighbor Solicitation (NS) üzenetet a saját link-local címére, hogy megbizonyosodjon róla, senki más nem használja.</li>
+                <li><strong>Router Solicitation (RS):</strong> A host multicastban (<code>ff02::2</code> – minden router) küld egy RS-t (ICMPv6 típus 133), hogy kérje a routereket, azonnal válaszoljanak RA-val.</li>
+                <li><strong>Router Advertisement (RA):</strong> A router válaszol (multicast <code>ff02::1</code> – minden node) egy RA üzenettel (ICMPv6 típus 134). Az RA tartalmazza:
+                    <ul>
+                        <li>A prefixet (pl. <code>2001:db8:1::/64</code>)</li>
+                        <li>A prefix élettartamát (valid lifetime, preferred lifetime)</li>
+                        <li>Flag-eket: A (autonomous flag) – SLAAC engedélyezve, M (managed flag) – DHCPv6 használata, O (other flag) – állapotmentes DHCPv6</li>
+                        <li>MTU, Hop Limit, Router élettartam (alapértelmezett gateway élettartama)</li>
+                    </ul>
+                </li>
+                <li><strong>Globális cím előállítása:</strong> Ha az A flag = 1, a host a prefixhez hozzáfűzi a saját interfész azonosítóját (64 bit), majd DAD-ot végez ezzel a címmel is.</li>
+                <li><strong>Alapértelmezett útvonal:</strong> A host a router Link-Local címét állítja be alapértelmezett gateway-nek (az RA forráscíme).</li>
+            </ol>
+        </li>
+        <li><strong>Időzítések:</strong> A routerek periodikusan (kb. 200 mp) küldenek RA-t, de a host RS-sel gyorsíthatja.</li>
+    </ul>
+
+    <h3>💡 20–30 perc: EUI-64 és véletlen címek (RFC 7217)</h3>
+    <ul>
+        <li><strong>EUI-64 (hagyományos):</strong>
+            <ul>
+                <li>A 48 bites MAC címből képez 64 bites interfész azonosítót.</li>
+                <li>Lépések:
+                    <ol>
+                        <li>A MAC cím közepére beszúrjuk az <code>FFFE</code>-t.</li>
+                        <li>A 7. bit (universal/local bit) invertálása.</li>
+                    </ol>
+                </li>
+                <li>Példa: MAC <code>00:11:22:AA:BB:CC</code>
+                    <ul>
+                        <li>Bontás: <code>0011 22</code> <code>AABB CC</code></li>
+                        <li>Beszerzés: <code>0011 22FF FEAA BBCC</code></li>
+                        <li>7. bit invertálása: <code>00</code> hexa → bináris <code>00000000</code>, a 7. bit a második hexa legkisebb helyiértékű bitje. Invertálás: <code>02</code> lesz.</li>
+                        <li>Eredmény: <code>0211:22FF:FEAA:BBCC</code></li>
+                    </ul>
+                </li>
+                <li><strong>Előny:</strong> Determinisztikus, mindig ugyanaz a cím. <strong>Hátrány:</strong> Adatvédelmi probléma, mert a MAC alapján követhető az eszköz.</li>
+            </ul>
+        </li>
+        <li><strong>Véletlen címek (RFC 7217) – modernebb:</strong>
+            <ul>
+                <li>A host egy titkos kulcsból, a prefixből, az interfész nevéből és egy számlálóból generál egy 64 bites véletlen értéket.</li>
+                <li><strong>Előny:</strong> Az eszköz minden hálózaton más címet kap, nem lehet követni.</li>
+                <li><strong>Használat:</strong> Windows 10/11, Android, macOS (általában alapértelmezett), Linux (beállítható).</li>
+            </ul>
+        </li>
+        <li><strong>Bemutató:</strong> PC-n <code>ip -6 addr show</code> – az interfész azonosító nem tűnik EUI-64-nek (ha random), hanem valami <code>abcd:1234:5678:90ef</code>-szerű.</li>
+    </ul>
+
+    <h3>🚩 30–40 perc: RA flag-ek jelentése – SLAAC vs. DHCPv6</h3>
+    <ul>
+        <li><strong>A flag (Autonomous flag – 1 bit):</strong> Ha 1, a host SLAAC-kal generálhat globális címet a kapott prefixből. Ha 0, akkor nem.</li>
+        <li><strong>M flag (Managed flag):</strong> Ha 1, a host DHCPv6-ot használjon címhez (állapotfüggő DHCPv6).</li>
+        <li><strong>O flag (Other flag):</strong> Ha 1, a host DHCPv6-tól kérjen egyéb információkat (DNS, domain), de a címet SLAAC-kal kapja (állapotmentes DHCPv6).</li>
+        <li><strong>Kombinációk:</strong>
+            <ul>
+                <li>Csak A=1: Tiszta SLAAC (csak cím, nincs DNS – de a DNS-t általában Router Advertisement DNS option (RFC 8106) vagy kézi beállítás adja).</li>
+                <li>A=1, O=1: SLAAC + állapotmentes DHCPv6 (cím SLAAC, DNS DHCPv6)</li>
+                <li>M=1: Állapotfüggő DHCPv6 (a DHCP szerver ad címet és egyebeket)</li>
+            </ul>
+        </li>
+        <li><strong>Megjegyzés:</strong> A valóságban sok hálózat (pl. otthoni routerek) csak SLAAC-ot használnak, és a DNS-t vagy RA-ból (ha támogatja) vagy a felhasználó adja meg kézzel.</li>
+    </ul>
+
+    <h3>📌 40–45 perc: Összefoglalás, kérdések, előzetes gyakorlatra</h3>
+    <ul>
+        <li><strong>Gyors kérdezés:</strong>
+            <ul>
+                <li><em>„Milyen ICMPv6 típus az RS? RA?”</em> → 133, 134</li>
+                <li><em>„Mi a DAD célja?”</em> → Címütközés elkerülése</li>
+                <li><em>„Milyen címet használ a host alapértelmezett gateway-ként SLAAC esetén?”</em> → A router Link-Local címét</li>
+            </ul>
+        </li>
+        <li><strong>Előzetes:</strong> <em>„Következő órán élesben konfiguráljuk a routert SLAAC-hoz, és megnézzük, ahogy a PC-k automatikusan kapják a címeket. Hozzatok Packet Tracert!”</em></li>
+    </ul>
+
+    <hr>
+
+    <h2>8. tanóra – SLAAC konfigurálás és ellenőrzés (gyakorlat) <span class="time-slot">45 perc</span></h2>
+
+    <h3>🔄 0–5 perc: Ismétlés és előkészület</h3>
+    <ul>
+        <li>Ismételjük meg a SLAAC lépéseit röviden.</li>
+        <li><strong>Topológia:</strong> Egy router (R1) és 2-3 PC egy switch-en keresztül. Egyszerű, hogy lássuk a folyamatot.
+            <ul>
+                <li>R1 g0/0: <code>2001:db8:1::1/64</code> (statikus)</li>
+                <li>PC-k automatikus címzéssel.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>⚙️ 5–20 perc: Router konfigurálása SLAAC-hoz (Cisco)</h3>
+    <ul>
+        <li><strong>Alap konfiguráció:</strong>
+            <pre>
+enable
+configure terminal
+ipv6 unicast-routing
+interface g0/0
+ ipv6 enable
+ ipv6 address 2001:db8:1::1/64
+ no shutdown
+end</pre>
+        </li>
+        <li><strong>Miért elég ez?</strong> A Cisco routeren, ha be van kapcsolva az <code>ipv6 unicast-routing</code>, és az interfészen van egy <code>/64</code>-es cím, akkor automatikusan elkezd RA-kat küldeni (alapértelmezetten A flag=1). A <code>ipv6 nd prefix</code> parancs nem kötelező, csak testreszabáshoz.</li>
+        <li><strong>Opcionális finomhangolások (nem kötelező, de érdemes megmutatni):</strong>
+            <ul>
+                <li>RA küldési intervallum: <code>ipv6 nd ra-interval 30</code> (másodperc)</li>
+                <li>RA élettartam: <code>ipv6 nd ra-lifetime 1800</code></li>
+                <li>Egy adott prefix hirdetése: <code>ipv6 nd prefix 2001:db8:1::/64 3600 1800</code> (valid, preferred)</li>
+                <li>RA letiltása (csak tesztre): <code>ipv6 nd ra suppress</code></li>
+            </ul>
+        </li>
+        <li><strong>Ellenőrzés a routeren:</strong>
+            <ul>
+                <li><code>show ipv6 interface g0/0</code> – keressük a "Router Advertisement" részt, ahol látszik a periódus, a flag-ek.</li>
+                <li><code>show ipv6 routers</code> – mutatja a szomszédos routereket (bár itt nincs más, de a PC-k is bekerülhetnek, ha ők is küldenének RA-t – ami nem jellemző).</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>🖥️ 20–35 perc: PC-k beállítása automatikus címzésre és megfigyelés</h3>
+    <ul>
+        <li><strong>PC-k konfigurálása (Windows):</strong>
+            <pre>
+netsh interface ipv6 set interface "Ethernet0" routerdiscovery=enabled
+netsh interface ipv6 set interface "Ethernet0" managedaddress=disabled
+ipconfig /release6
+ipconfig /renew6</pre>
+            <em>Az első parancs engedélyezi a router felfedezést (általában alapból be van kapcsolva). A <code>renew6</code> kikényszeríti az RS küldését.</em>
+        </li>
+        <li><strong>PC-k Linuxon (NetworkManager vagy kézi):</strong>
+            <pre>
+sudo sysctl -w net.ipv6.conf.eth0.autoconf=1
+sudo sysctl -w net.ipv6.conf.eth0.accept_ra=1
+sudo ip -6 addr flush dev eth0
+sudo systemctl restart networking   # vagy dhclient -6</pre>
+        </li>
+        <li><strong>Ellenőrzés PC-n:</strong>
+            <ul>
+                <li><code>ipconfig</code> / <code>ip -6 addr show</code> – megjelenik egy <code>2001:db8:1::xxxx</code> cím (ahol xxxx a generált interfész azonosító).</li>
+                <li><code>ipconfig /all</code> (Windows) – látszik az alapértelmezett gateway, ami a router Link-Local címe.</li>
+            </ul>
+        </li>
+        <li><strong>Ping teszt:</strong> PC1 pingeli a router GUA-ját (<code>2001:db8:1::1</code>) és a router Link-Local címét is (<code>fe80::1%4</code> formában).</li>
+        <li><strong>NDP cache megtekintése:</strong>
+            <ul>
+                <li>Windows: <code>netsh int ipv6 show neighbors</code></li>
+                <li>Linux: <code>ip -6 neigh show</code></li>
+                <li>Cisco: <code>show ipv6 neighbors</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>📡 35–40 perc: Wireshark / tcpdump bemutató (ha lehetséges)</h3>
+    <ul>
+        <li><strong>ICMPv6 csomagok megfigyelése:</strong>
+            <ul>
+                <li>Szűrő: <code>icmpv6</code></li>
+                <li>A PC bootolásakor vagy <code>ipconfig /renew6</code> hatására:
+                    <ol>
+                        <li>Router Solicitation (forrás: fe80::..., cél: ff02::2)</li>
+                        <li>Router Advertisement (forrás: fe80::1, cél: ff02::1)</li>
+                        <li>Neighbor Solicitation (DAD a globális címre)</li>
+                        <li>Neighbor Advertisement (ha nem volt ütközés)</li>
+                    </ol>
+                </li>
+            </ul>
+        </li>
+        <li><strong>Magyarázat közben:</strong> A diákok láthatják a valós hálózati forgalmat.</li>
+    </ul>
+
+    <h3>🔧 40–45 perc: Hibakeresés, összefoglalás, házi feladat</h3>
+    <ul>
+        <li><strong>Gyakorlati problémák és megoldások:</strong>
+            <ol>
+                <li><strong>A PC nem kap globális címet:</strong>
+                    <ul>
+                        <li>Routeren nincs <code>ipv6 unicast-routing</code> → add hozzá.</li>
+                        <li>Az interfészen nincs <code>/64</code> cím → adj neki legalább egy GUA-t.</li>
+                        <li>RA suppress aktív → <code>no ipv6 nd ra suppress</code>.</li>
+                        <li>Tűzfal blokkolja az ICMPv6-ot (ritka).</li>
+                    </ul>
+                </li>
+                <li><strong>A PC kap címet, de nem tud pingelni a routeren túlra:</strong>
+                    <ul>
+                        <li>A PC routing táblájában kell lennie egy <code>::/0 via fe80::...</code> útvonalnak. Ha nincs, a router RA-jában meg kell adni a Router Lifetime-ot (alapértelmezetten van).</li>
+                    </ul>
+                </li>
+                <li><strong>DAD hibát jelez:</strong> Két eszköz ugyanazt a globális címet próbálja használni. Ellenőrizni kell a MAC címeket, vagy ha véletlen címek, újraindítani a generálást.</li>
+            </ol>
+        </li>
+        <li><strong>Összefoglaló táblázat a tanóráról:</strong>
+            <table>
+                <thead><tr><th>Teendő</th><th>Parancs (Cisco)</th><th>Parancs (PC)</th></tr></thead>
+                <tbody>
+                    <tr><td>SLAAC bekapcsolása routeren</td><td><code>ipv6 unicast-routing</code></td><td>–</td></tr>
+                    <tr><td>RA küldés ellenőrzése</td><td><code>show ipv6 interface g0/0</code></td><td>–</td></tr>
+                    <tr><td>Automatikus címkérés PC-n</td><td>–</td><td><code>ipconfig /renew6</code> (Win)</td></tr>
+                    <tr><td>Generált cím ellenőrzése</td><td>–</td><td><code>ipconfig</code> / <code>ip -6 addr</code></td></tr>
+                    <tr><td>NDP cache</td><td><code>show ipv6 neighbors</code></td><td><code>netsh int ipv6 show neighbors</code></td></tr>
+                </tbody>
+            </table>
+        </li>
+        <li><strong>Házi feladat (írásban vagy Packet Tracer-ben):</strong>
+            <br><em>„Építs egy hálózatot, ahol két router van (R1, R2), és mindkettőhöz csatlakozik egy-egy LAN szegmens. Az R1 LAN-ján (<code>2001:db8:1::/64</code>) a PC-k SLAAC-kal kapjanak címet. Az R2 LAN-ján (<code>2001:db8:2::/64</code>) a PC-k kapjanak statikus címet. Konfigurálj statikus útvonalat a routerek között, és ellenőrizd, hogy a SLAAC-os PC pingelni tudja a statikus PC-t. Készíts screenshot-ot a <code>show ipv6 route</code> és a PC <code>ipconfig</code> kimenetéről.”</em>
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>Oktatói segédanyagok a 4. blokkhoz</h2>
+
+    <h3>📊 Prezentáció vázlat (diafejlécek)</h3>
+    <ol>
+        <li>Cím: SLAAC – Automatikus címzés IPv6-ban</li>
+        <li>Miért kell automatikus címzés? (1000 PC, IoT)</li>
+        <li>SLAAC jelentése: Stateless Address Autoconfiguration</li>
+        <li>A folyamat ábrája (RS → RA → DAD → cím)</li>
+        <li>ICMPv6 típusok: RS(133), RA(134), NS(135), NA(136)</li>
+        <li>Az RA tartalma – prefix, lifetime, flag-ek</li>
+        <li>EUI-64 címképzés – MAC → 64 bit (példa)</li>
+        <li>Véletlen címek (RFC 7217) – adatvédelem</li>
+        <li>RA flag-ek: A, M, O jelentése</li>
+        <li>Router konfiguráció SLAAC-hoz – <code>ipv6 unicast-routing</code></li>
+        <li>PC oldali beállítás (Windows, Linux)</li>
+        <li>Ellenőrzés – <code>ipconfig</code>, <code>show ipv6 neighbors</code></li>
+        <li>Hibakeresés – gyakori problémák</li>
+    </ol>
+
+    <h3>🧑‍🏫 Táblai vázlat (kivetítésre)</h3>
+    <pre>
+SLAAC folyamat:
+1. Host: Link-Local + DAD
+2. Host -> Router: Router Solicitation (RS) (ff02::2)
+3. Router -> Host: Router Advertisement (RA) (ff02::1)
+   - Prefix: 2001:db8:1::/64
+   - A flag=1 (SLAAC engedélyezve)
+4. Host: prefix + (EUI-64 / random) = GUA
+5. Host: DAD a GUA-ra
+6. Host: alapértelmezett route = router Link-Local címe
+
+Router konfig (Cisco):
+ipv6 unicast-routing
+int g0/0
+ ipv6 enable
+ ipv6 address 2001:db8:1::1/64
+
+PC (Windows):
+netsh int ipv6 set interface "Ethernet0" routerdiscovery=enabled
+ipconfig /renew6
+
+Ellenőrzés:
+PC: ipconfig -> 2001:db8:1::xxxx
+Cisco: show ipv6 neighbors
+    </pre>
+
+    <div class="tip">
+        <strong>💡 További hasznos parancsok (oktatói segédlet)</strong><br>
+        <strong>Cisco:</strong><br>
+        <code>debug ipv6 nd</code> – NDP események követése (RS, RA, NS, NA)<br>
+        <code>show ipv6 interface g0/0 | include RA</code> – RA paraméterek<br>
+        <strong>Linux:</strong><br>
+        <code>sudo rdisc6 eth0</code> – manuális RS küldés és RA fogadás<br>
+        <code>sudo ip -6 addr add 2001:db8:1::2/64 dev eth0</code> – statikus cím hozzáadása (gyakorlás)<br>
+        <strong>Windows:</strong><br>
+        <code>netsh int ipv6 show interface</code> – interfész indexek, állapotok<br>
+        <code>netsh int ipv6 show routes</code> – routing tábla
+    </div>
+
+    <div class="tip">
+        <strong>⚠️ Gyakori hibák és megoldásuk a 4. blokkban</strong>
+        <ul>
+            <li><strong>Hiba:</strong> A PC csak link-local címet kap, GUA nincs<br>
+                <strong>Ok:</strong> A router nem küld RA-t (nincs <code>ipv6 unicast-routing</code> vagy RA suppress)<br>
+                <strong>Javítás:</strong> Routeren add hozzá a parancsot; ellenőrizd <code>show ipv6 interface</code></li>
+            <li><strong>Hiba:</strong> A PC-n a GUA cím EUI-64 helyett véletlen<br>
+                <strong>Ok:</strong> A modern OS alapból random – nem hiba<br>
+                <strong>Magyarázat:</strong> Ismertesd az RFC 7217-et</li>
+            <li><strong>Hiba:</strong> A PC nem pingeli a másik szegmens PC-jét, de a routereket igen<br>
+                <strong>Ok:</strong> A PC-n nincs alapértelmezett útvonal (a router RA-jában a Router Lifetime=0)<br>
+                <strong>Javítás:</strong> Ellenőrizd a RA-t, vagy állíts be manuálisan egy alapértelmezett útvonalat</li>
+            <li><strong>Hiba:</strong> DAD hiba: "Duplicate address detected"<br>
+                <strong>Ok:</strong> Két PC ugyanazt a véletlen címet generálta (nagyon ritka)<br>
+                <strong>Javítás:</strong> Flushold a címet, újra kérj: <code>ipconfig /renew6</code></li>
+        </ul>
+    </div>
+
+    <div class="note">
+        <strong>📚 Differenciálási lehetőségek (4. blokk)</strong>
+        <ul>
+            <li><strong>Gyengébbeknek:</strong> Csak a router alapkonfigurációját kell elvégezniük (másolják be a parancsokat). A PC-n csak <code>ipconfig /renew6</code>-ot futtassák. A cél: lássák, hogy működik.</li>
+            <li><strong>Erősebbeknek:</strong> Konfiguráljanak két különböző flag-et (pl. A=0, M=1) és próbálják ki a DHCPv6-ot (bár az anyagban nem szerepel, de előrelátóan kipróbálhatják). Elemezzék a Wireshark nyomokat, és dokumentálják a csomagok tartalmát.</li>
+        </ul>
+    </div>
+
+    <div class="tip">
+        <strong>🔍 EUI-64 részletes számítási példa (oktatói segédlet)</strong><br>
+        MAC: <code>00:11:22:AA:BB:CC</code><br>
+        1. Két részre bontás: <code>0011 22</code> | <code>AABB CC</code><br>
+        2. Középre <code>FFFE</code> beszúrás: <code>0011 22FF FEAA BBCC</code><br>
+        3. A 7. bit invertálása: Az első oktett <code>00</code> hexa = bináris <code>00000000</code>. A 7. bit (egyetemes/helyi bit) a második hexa legkisebb helyiértékű bitje. Invertálás után: <code>00000010</code> = <code>02</code> hexa.<br>
+        4. Eredmény: <code>0211:22FF:FEAA:BBCC</code>
+    </div>
+
+    <hr>
+    <p><strong>Záró megjegyzés a 4. blokkhoz:</strong> Ez a teljes, percre bontott részletes kifejtés tartalmazza az összes szükséges elemet a SLAAC elméletének és gyakorlatának oktatásához. A diákok megértik az automatikus címzés folyamatát, képesek lesznek konfigurálni a routert és a PC-ket, valamint ellenőrizni a működést. A következő blokkban az összefoglaló gyakorlati mérés következik, ahol a 3. és 4. blokk anyagát kombináljuk egy komplex feladatban.</p>
+</div>
+</body>
+</html>

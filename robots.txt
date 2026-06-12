@@ -1,0 +1,28 @@
+# =======================================================================
+# ROBOTS.TXT SABLON – Keresőrobotok irányelvei
+# =======================================================================
+
+# Globális szabályok minden keresőrobot számára (Googlebot, Bingbot, Yandex stb.)
+User-agent: *
+
+# Tiltott könyvtárak (pl. admin felületek, kosár oldalak, belső keresési találatok, ideiglenes fájlok)
+Disallow: /admin/
+Disallow: /api/
+Disallow: /temp/
+Disallow: /search?*
+Disallow: /checkout/
+Disallow: /*?*             # Minden URL paraméterezett verziójának letiltása (megelőzi a duplikációt, de óvatosan használandó)
+
+# Engedélyezett könyvtárak (opcionális, ha egy tiltott szülőkönyvtáron belül engedélyeznénk valamit)
+Allow: /api/public/
+
+# Kifejezetten a Googlebot számára beállított szabályok (opcionális)
+User-agent: Googlebot
+Disallow: /no-google/
+
+# Kifejezetten a hirdetési robotok számára (hogy a hirdetések indexelése zökkenőmentes legyen)
+User-agent: Mediapartners-Google
+Allow: /
+
+# XML Sitemap (Webhelytérkép) elérési útja - Mindig abszolút URL legyen!
+Sitemap: https://seo-template.example.com/sitemap.xml

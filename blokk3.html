@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv6 tananyag – 3. blokk: Duál stack, ping, statikus IPv6 routing (teljes, részletes kifejtés)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .document {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.12);
+            padding: 45px 50px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: #0b3b4f;
+            border-bottom: 3px solid #1e6f5c;
+            display: inline-block;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.7rem;
+            margin: 1.8rem 0 1rem;
+            color: #1e6f5c;
+            border-left: 5px solid #1e6f5c;
+            padding-left: 20px;
+        }
+        h3 {
+            font-size: 1.4rem;
+            margin: 1.3rem 0 0.6rem;
+            color: #2c5282;
+        }
+        h4 {
+            font-size: 1.1rem;
+            margin: 1rem 0 0.4rem;
+            color: #2d3748;
+        }
+        .badge {
+            background: #1e6f5c;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 40px;
+            padding: 4px 12px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid #cad2db;
+            padding: 10px 12px;
+            vertical-align: top;
+        }
+        th {
+            background: #eef2f5;
+            font-weight: 600;
+        }
+        code {
+            background: #f0f2f5;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            color: #c44536;
+        }
+        pre {
+            background: #1e2a36;
+            color: #f0f3f8;
+            padding: 16px;
+            border-radius: 14px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin: 20px 0;
+        }
+        hr {
+            margin: 40px 0;
+            border: none;
+            border-top: 2px dashed #bdd3e8;
+        }
+        ul, ol {
+            margin: 10px 0 10px 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fef7e0;
+            border-left: 5px solid #f3b33d;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .tip {
+            background: #e0f2fe;
+            border-left: 5px solid #0284c7;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .time-slot {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+        @media (max-width: 700px) {
+            .document {
+                padding: 20px;
+            }
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+    <h1>IPv6 címzés és dinamikus címkiosztás (SLAAC)<br>3. blokk – Duál stack, ping, statikus IPv6 routing</h1>
+    <p><strong>Részletes, percre bontott tanmenet</strong> – 2 × 45 perc (teljes kifejtés)<br>
+    <strong>Készítette:</strong> Szakmai informatikai oktató (20+ év tapasztalat)<br>
+    <strong>Célcsoport:</strong> 11–12. évfolyamos technikumi tanulók<br>
+    <strong>Környezet:</strong> Packet Tracer (vagy valós eszközök: Cisco routerek, Linux/Windows PC-k), projektor</p>
+
+    <hr>
+
+    <h2>5. tanóra – Duál stack konfigurálása (routerek, PC-k) <span class="time-slot">45 perc</span></h2>
+
+    <h3>🔄 0–5 perc: Ismétlés és motiváció</h3>
+    <ul>
+        <li>Kérdés az előző blokkból: <em>„Mi a Link-Local cím prefixe? Mire jó?”</em> → <code>fe80::/10</code>, az adott láncon belüli kommunikáció.</li>
+        <li>Bejelentés: <em>„Most már eljutottunk odáig, hogy élesben is konfigurálunk. Megtanuljuk, hogyan kell egy routert és egy számítógépet IPv6-ra felkészíteni anélkül, hogy az IPv4-et eltávolítanánk. Ez a duál stack.”</em></li>
+        <li>Miért fontos a duál stack? <em>„A világ nem egyik napról a másikra tér át IPv6-ra – a következő 10-20 évben is együtt él a két protokoll.”</em></li>
+    </ul>
+
+    <h3>🧠 5–15 perc: Duál stack elméleti alapok</h3>
+    <ul>
+        <li><strong>Definíció:</strong> Az eszköz egyszerre támogatja az IPv4 és IPv6 protokollvermet. Mindkét stack függetlenül fut, saját címekkel, routing táblával.</li>
+        <li><strong>Hogyan dönt az alkalmazás?</strong>
+            <ul>
+                <li>Általában az operációs rendszer preferenciája: IPv6 előnyben, ha elérhető (RFC 6724, „Happy Eyeballs”).</li>
+                <li>Pl. webböngésző először megpróbálja az IPv6-ot, ha nem megy, átvált IPv4-re.</li>
+            </ul>
+        </li>
+        <li><strong>Címzés duál stack esetén:</strong>
+            <ul>
+                <li>Egy interfészhez több cím is tartozhat: IPv4, IPv6 Link-Local, IPv6 GUA/ULA.</li>
+                <li>Pl. <code>ip addr show</code> Linuxon: látni fogod az IPv4 mellett az IPv6-okat.</li>
+            </ul>
+        </li>
+        <li><strong>Előnyök:</strong> Fokozatos átállás, kompatibilitás, nincs szükség tunnel protokollokra (bár az is létezik).</li>
+        <li><strong>Hátrány:</strong> Két párhuzamos stack kezelése = kétszeres konfiguráció, több erőforrás, kétszer annyi routing bejegyzés.</li>
+    </ul>
+
+    <h3>🏗️ 15–30 perc: Topológia építése (Packet Tracer vagy közös bemutató)</h3>
+    <ul>
+        <li><strong>Közös munka:</strong> (oktató által vezetve, diákok követik saját gépükön)</li>
+        <li><strong>Topológia:</strong>
+            <ul>
+                <li>2 router: R1, R2 (Cisco 2911)</li>
+                <li>2 PC: PC1 (csatlakozik R1-hez), PC2 (csatlakozik R2-höz)</li>
+                <li>R1 és R2 összekötve egy pont-pont kapcsolattal</li>
+            </ul>
+        </li>
+        <li><strong>Kapcsolatok és címek:</strong>
+            <pre>
+PC1 (eth0) ---- (g0/0) R1 (g0/1) ---- (g0/0) R2 (g0/1) ---- PC2 (eth0)
+
+IPv4:
+PC1:   10.0.1.2/24, GW 10.0.1.1
+R1 g0/0: 10.0.1.1/24
+R1 g0/1: 10.0.12.1/24
+R2 g0/0: 10.0.12.2/24
+R2 g0/1: 10.0.2.1/24
+PC2:   10.0.2.2/24, GW 10.0.2.1
+
+IPv6 (GUA):
+PC1:   2001:db8:1::2/64, GW 2001:db8:1::1
+R1 g0/0: 2001:db8:1::1/64
+R1 g0/1: 2001:db8:12::1/64
+R2 g0/0: 2001:db8:12::2/64
+R2 g0/1: 2001:db8:2::1/64
+PC2:   2001:db8:2::2/64, GW 2001:db8:2::1
+            </pre>
+        </li>
+        <li><strong>Táblán vagy projektoron</strong> a topológia rajza.</li>
+    </ul>
+
+    <h3>⚙️ 30–40 perc: Router konfiguráció lépésről lépésre (Cisco)</h3>
+    <ul>
+        <li><strong>Minden routeren először:</strong>
+            <pre>
+enable
+configure terminal
+ipv6 unicast-routing   ! EZ NÉLKÜL NINCS IPv6 ROUTING!</pre>
+        </li>
+        <li><strong>R1 konfig:</strong>
+            <pre>
+interface g0/0
+ ip address 10.0.1.1 255.255.255.0
+ ipv6 enable
+ ipv6 address 2001:db8:1::1/64
+ no shutdown
+interface g0/1
+ ip address 10.0.12.1 255.255.255.0
+ ipv6 enable
+ ipv6 address 2001:db8:12::1/64
+ no shutdown
+end
+write memory</pre>
+        </li>
+        <li><strong>R2 konfig (hasonló, szimmetrikus):</strong>
+            <pre>
+interface g0/0
+ ip address 10.0.12.2 255.255.255.0
+ ipv6 enable
+ ipv6 address 2001:db8:12::2/64
+ no shutdown
+interface g0/1
+ ip address 10.0.2.1 255.255.255.0
+ ipv6 enable
+ ipv6 address 2001:db8:2::1/64
+ no shutdown
+end
+write memory</pre>
+        </li>
+        <li><strong>Fontos parancsok magyarázata:</strong>
+            <ul>
+                <li><code>ipv6 enable</code> – bekapcsolja az IPv6-ot az interfészen (automatikusan generál egy Link-Local címet is).</li>
+                <li><code>ipv6 address .../64</code> – statikus GUA hozzárendelése.</li>
+                <li><code>no shutdown</code> – interfész aktiválása (alapból le van tiltva).</li>
+            </ul>
+        </li>
+        <li><strong>Ellenőrzés:</strong>
+            <ul>
+                <li><code>show ipv6 interface brief</code> – listázza az összes IPv6 címet.</li>
+                <li><code>show ipv6 route</code> – IPv6 routing tábla (még nincs útvonal, csak a közvetlen kapcsolatok).</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>🖥️ 40–45 perc: PC-k konfigurálása (Windows/Linux példák)</h3>
+    <ul>
+        <li><strong>PC1 (Windows – CLI vagy GUI):</strong>
+            <pre>
+netsh interface ip set address "Ethernet0" static 10.0.1.2 255.255.255.0 10.0.1.1
+netsh interface ipv6 set address "Ethernet0" static 2001:db8:1::2/64
+netsh interface ipv6 add route ::/0 "Ethernet0" 2001:db8:1::1</pre>
+            <em>Az alapértelmezett útvonal megadása kötelező, mert a router nem küld még RA-t (később a SLAAC-nál majd automatikus).</em>
+        </li>
+        <li><strong>PC1 (Linux – <code>ip</code> parancsokkal):</strong>
+            <pre>
+sudo ip addr add 10.0.1.2/24 dev eth0
+sudo ip route add default via 10.0.1.1
+sudo ip -6 addr add 2001:db8:1::2/64 dev eth0
+sudo ip -6 route add default via 2001:db8:1::1</pre>
+        </li>
+        <li><strong>Megjegyzés:</strong> A PC Link-Local címén keresztül is megadhatnánk a gateway-t (<code>fe80::1</code>), de a GUA gateway egyszerűbb a kezdeti tanuláshoz.</li>
+        <li><strong>Ellenőrzés PC-n:</strong> <code>ipconfig</code> (Windows) vagy <code>ip -6 addr show</code> (Linux) – látszik a GUA és a Link-Local is.</li>
+        <li><strong>Házi feladat előzetes:</strong> <em>„Ellenőrizzétek, hogy a ping6 működik-e a következő órán – addig ne is lépjetek tovább!”</em></li>
+    </ul>
+
+    <hr>
+
+    <h2>6. tanóra – Ping6, traceroute6, statikus routing <span class="time-slot">45 perc</span></h2>
+
+    <h3>🔄 0–5 perc: Ismétlés a konfigurációból</h3>
+    <ul>
+        <li>Kérdés: <em>„Ki tudja fejből mondani, hogy kell egy Cisco interfészre IPv6 címet adni?”</em> → <code>ipv6 address 2001:db8:1::1/64</code></li>
+        <li><em>„Mi a különbség az <code>ipv6 enable</code> és az <code>ipv6 address</code> között?”</em> → <code>ipv6 enable</code> csak Link-Localt ad, az <code>ipv6 address</code> ad GUA-t is.</li>
+        <li>Ellenőrizzük közösen, hogy mindenki eljutott-e a konfiguráció végéig. (Ha Packet Tracerben dolgoznak, néhány perc javítás.)</li>
+    </ul>
+
+    <h3>📡 5–15 perc: Ping6 és Traceroute6 – Alapvető hibakeresés</h3>
+    <ul>
+        <li><strong>Ping6 a közvetlen kapcsolatokon belül:</strong>
+            <ul>
+                <li>PC1-ről pingeljük a saját gatewayt: <code>ping 2001:db8:1::1</code> (Windows/Linux egyaránt működik). Ha nem megy, ellenőrizzük a fizikai kapcsolatot, az interfész állapotát (<code>no shutdown</code>), a tűzfalat (Windows tűzfal néha blokkolja).</li>
+                <li>PC1-ről pingeljük a R1 másik interfészét (g0/1): <code>ping 2001:db8:12::1</code> – ennek mennie kell, mert ugyanazon a routeren belül van.</li>
+                <li>PC1-ről pingeljük a R2 g0/0-át: <code>ping 2001:db8:12::2</code> – ennek is mennie kell, mert a router továbbítja a pinget? <strong>Nem!</strong> Még nincs statikus útvonal a routerek között, és a PC sem tudja, merre van a <code>2001:db8:2::/64</code>. De a PC pingje a <code>2001:db8:12::2</code>-t eléri, mert az a R2 egyik interfésze, és a R1 tudja, hogy az a <code>2001:db8:12::2</code> közvetlen elérhető.</li>
+            </ul>
+        </li>
+        <li><strong>Traceroute6:</strong>
+            <ul>
+                <li>Windows: <code>tracert -6 2001:db8:2::2</code></li>
+                <li>Linux: <code>traceroute6 2001:db8:2::2</code></li>
+                <li>Elsőként látni fogjuk, hogy a csomag megáll a R1-nél, mert nem tud továbbmenni.</li>
+            </ul>
+        </li>
+        <li><strong>Eszközök a routeren a hibakereséshez:</strong>
+            <ul>
+                <li><code>debug ipv6 icmp</code> – látjuk a ping kéréseket és válaszokat (óvatosan, éles rendszeren ne).</li>
+                <li><code>show ipv6 interface</code> – ellenőrizzük, hogy az interfész „up/up”.</li>
+                <li><code>show ipv6 neighbors</code> – NDP cache (hasonló az ARP cache-hez).</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>🛤️ 15–30 perc: Statikus útvonalak IPv6-ban</h3>
+    <ul>
+        <li><strong>Probléma:</strong> A R1 tudja, hogyan érje el a <code>2001:db8:1::/64</code>-et (saját interfész) és a <code>2001:db8:12::/64</code>-et, de a <code>2001:db8:2::/64</code>-et nem. A R2 hasonlóan nem ismeri a PC1 hálózatát.</li>
+        <li><strong>Megoldás:</strong> Statikus útvonalak felvétele mindkét routeren.</li>
+        <li><strong>Parancs a R1-en:</strong>
+            <pre>ipv6 route 2001:db8:2::/64 2001:db8:12::2</pre>
+            <em>Ez azt jelenti: „A 2001:db8:2::/64 hálózatot a 2001:db8:12::2 (R2 g0/0 címe) felé tudom elérni.”</em>
+        </li>
+        <li><strong>Parancs a R2-n:</strong>
+            <pre>ipv6 route 2001:db8:1::/64 2001:db8:12::1</pre>
+        </li>
+        <li><strong>Alternatív megadás Link-Local címmel (említés szintjén):</strong>
+            <pre>ipv6 route 2001:db8:2::/64 g0/1 fe80::2</pre>
+            <em>Ez akkor jó, ha a következő hop Link-Local címét használjuk. Előny: nem kell megváltoztatni a GUA címet. Hátrány: bonyolultabb kezdőknek.</em>
+        </li>
+        <li><strong>Ellenőrzés:</strong> <code>show ipv6 route</code> – most már látjuk a <code>S</code> (static) bejegyzéseket.</li>
+        <li><strong>Visszatérve a pinghez:</strong>
+            <ul>
+                <li>PC1-ről ping <code>2001:db8:2::2</code> – sikeres kell legyen!</li>
+                <li>Közben <code>tracert -6 2001:db8:2::2</code> mutatja az utat: PC1 → R1 → R2 → PC2.</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>👥 30–40 perc: Gyakorlás – Kisebb csoportos feladat</h3>
+    <ul>
+        <li><strong>Feladat:</strong> A topológiát már megépítették. Adják hozzá a statikus útvonalakat, majd ellenőrizzék a pinget minden irányban (PC1 → PC2, PC2 → PC1, valamint PC-k pingeljék a másik router interfészeit).</li>
+        <li><strong>Kiegészítő feladat gyorsabbaknak:</strong> Távolítsák el az alapértelmezett gateway-t a PC1-ről, és helyette adjanak hozzá egy specifikus útvonalat a <code>2001:db8:2::/64</code> felé a R1 Link-Local címén keresztül. (Nehezebb, de mélyíti a megértést.)</li>
+        <li><strong>Körbejárás, segítségnyújtás.</strong></li>
+    </ul>
+
+    <h3>📌 40–45 perc: Összefoglalás, házi feladat, előzetes a 4. blokkhoz</h3>
+    <ul>
+        <li><strong>Összefoglaló kérdések:</strong>
+            <ul>
+                <li><em>„Mi a duál stack lényege?”</em> → Két protokoll verem együtt.</li>
+                <li><em>„Milyen paranccsal nézzük meg az IPv6 routing táblát Cisco-n?”</em> → <code>show ipv6 route</code></li>
+                <li><em>„Hogyan pingelünk IPv6-ra?”</em> → <code>ping</code> vagy <code>ping6</code> (a platformtól függ).</li>
+            </ul>
+        </li>
+        <li><strong>Házi feladat (írásban vagy Packet Tracer fájl beküldéssel):</strong>
+            <br><em>„Egészítsd ki a mai topológiát egy harmadik routerrel (R3) és egy PC3-mal. R2 és R3 közé vegyél fel egy új /64-es hálózatot (<code>2001:db8:23::/64</code>). Állítsd be a címeket és a statikus útvonalakat úgy, hogy PC1 pingelni tudja PC3-at is. Add meg az összes szükséges <code>ipv6 route</code> parancsot.”</em>
+        </li>
+        <li><strong>Előzetes a következő órára:</strong> <em>„A statikus címzés után következik a dinamikus. Megtanuljuk, hogyan kaphatnak a PC-k automatikusan IPv6 címet anélkül, hogy DHCP szervert kellene telepíteni – ez a SLAAC. Hozzatok magatokkal jegyzetet a következő elméleti részhez.”</em></li>
+    </ul>
+
+    <hr>
+
+    <h2>Oktatói segédanyagok a 3. blokkhoz</h2>
+
+    <h3>📊 Prezentáció vázlat (diafejlécek)</h3>
+    <ol>
+        <li>Cím: Duál stack és statikus IPv6 routing</li>
+        <li>Duál stack definíció, előnyök</li>
+        <li>Topológia ábra (R1, R2, PC1, PC2, címekkel)</li>
+        <li>Router alapkonfig – <code>ipv6 unicast-routing</code></li>
+        <li>Interfész konfig – <code>ipv6 enable</code>, <code>ipv6 address</code></li>
+        <li>PC-k konfigurációja (Windows, Linux)</li>
+        <li>Ellenőrzés – <code>show ipv6 interface brief</code>, <code>ipconfig</code></li>
+        <li>Ping6 és traceroute6 (parancsok)</li>
+        <li>Statikus útvonal – <code>ipv6 route destination/prefix next-hop</code></li>
+        <li>Példa statikus útvonalra R1-en és R2-n</li>
+        <li>Gyakorló feladat – 3 routeres bővítés</li>
+    </ol>
+
+    <h3>🧑‍🏫 Táblai vázlat (kivetítésre)</h3>
+    <pre>
+DUÁL STACK = IPv4 + IPv6 együtt
+
+R1 konfig:
+ ipv6 unicast-routing
+ int g0/0
+  ip address 10.0.1.1 255.255.255.0
+  ipv6 enable
+  ipv6 address 2001:db8:1::1/64
+ int g0/1
+  ip address 10.0.12.1 255.255.255.0
+  ipv6 enable
+  ipv6 address 2001:db8:12::1/64
+
+PC1 (Win): netsh int ipv6 set addr "eth0" static 2001:db8:1::2/64
+          netsh int ipv6 add route ::/0 "eth0" 2001:db8:1::1
+
+Statikus routing:
+R1: ipv6 route 2001:db8:2::/64 2001:db8:12::2
+R2: ipv6 route 2001:db8:1::/64 2001:db8:12::1
+
+Ellenőrzés:
+show ipv6 route
+ping 2001:db8:2::2
+tracert -6 2001:db8:2::2
+    </pre>
+
+    <div class="tip">
+        <strong>💡 Parancsgyűjtemény (kiosztható segédlet a 3. blokkhoz)</strong><br>
+        <strong>Cisco:</strong><br>
+        <code>ipv6 unicast-routing</code> – globálisan bekapcsolja az IPv6 routingot<br>
+        <code>ipv6 enable</code> – interfészen engedélyezi az IPv6-ot (Link-Local)<br>
+        <code>ipv6 address &lt;cím&gt;/&lt;prefix&gt;</code> – statikus GUA<br>
+        <code>show ipv6 interface brief</code> – IPv6 interfészek listája<br>
+        <code>show ipv6 route</code> – IPv6 routing tábla<br>
+        <code>show ipv6 neighbors</code> – NDP cache<br>
+        <code>ipv6 route &lt;cél/prefix&gt; &lt;következő hop&gt;</code> – statikus útvonal<br>
+        <strong>Windows:</strong><br>
+        <code>netsh int ipv6 set address "Eth" static &lt;cím&gt;</code><br>
+        <code>netsh int ipv6 add route ::/0 "Eth" &lt;gw&gt;</code><br>
+        <code>ping -6 &lt;cím&gt;</code><br>
+        <code>tracert -6 &lt;cím&gt;</code><br>
+        <strong>Linux:</strong><br>
+        <code>ip -6 addr add &lt;cím&gt;/&lt;prefix&gt; dev eth0</code><br>
+        <code>ip -6 route add default via &lt;gw&gt;</code><br>
+        <code>ping6 &lt;cím&gt;</code><br>
+        <code>traceroute6 &lt;cím&gt;</code>
+    </div>
+
+    <div class="tip">
+        <strong>⚠️ Gyakori hibák és megoldásuk a 3. blokkban</strong>
+        <ul>
+            <li><strong>Hiba:</strong> PC1-ről nem megy a ping a gatewayre (<code>2001:db8:1::1</code>)<br>
+                <strong>Ok:</strong> Tűzfal blokkolja (Windows), vagy rossz a gateway cím<br>
+                <strong>Javítás:</strong> Kapcsold ki a tűzfalat tesztelésre; ellenőrizd az IPv6 címet a PC-n</li>
+            <li><strong>Hiba:</strong> A routerek egymást nem pingelik a pont-pont kapcsolaton<br>
+                <strong>Ok:</strong> <code>ipv6 unicast-routing</code> hiányzik; vagy az egyik interfész le van állítva (<code>shutdown</code>)<br>
+                <strong>Javítás:</strong> Ellenőrizd a konfigot, add hozzá a parancsot</li>
+            <li><strong>Hiba:</strong> <code>show ipv6 route</code> nem mutatja a közvetlen hálózatokat<br>
+                <strong>Ok:</strong> Az interfészen nincs <code>ipv6 enable</code> vagy nincs cím<br>
+                <strong>Javítás:</strong> Add hozzá, majd <code>no shutdown</code></li>
+            <li><strong>Hiba:</strong> A ping a távoli PC-re (<code>2001:db8:2::2</code>) nem megy, de a közbülső router interfészek igen<br>
+                <strong>Ok:</strong> Hiányzik a statikus útvonal az egyik routeren<br>
+                <strong>Javítás:</strong> Ellenőrizd mindkét router routing tábláját</li>
+        </ul>
+    </div>
+
+    <div class="note">
+        <strong>📚 Differenciálási lehetőségek (3. blokk)</strong>
+        <ul>
+            <li><strong>Gyengébbeknek:</strong> Adjunk kész konfigurációs sablont, amit csak be kell másolni. A ping és traceroute parancsokat lépésről lépésre közösen végezzük.</li>
+            <li><strong>Erősebbeknek:</strong> Próbálják ki a Link-Local alapú statikus routingot (<code>ipv6 route ... g0/1 fe80::2</code>). Valamint próbálják meg a duál stack mellett az IPv4 routingot is beállítani (statikus vagy RIP). Készítsenek Wireshark felfogást és elemezzék az NDP csomagokat.</li>
+        </ul>
+    </div>
+
+    <div class="tip">
+        <strong>🔍 Linux extra parancsok a 3. blokkhoz:</strong><br>
+        <code>ip -6 route show</code> – IPv6 routing tábla<br>
+        <code>ip -6 neigh show</code> – NDP cache<br>
+        <code>ping6 -I eth0 fe80::1</code> – ping egy link-local címre a megadott interfészen keresztül<br>
+        <code>traceroute6 -n 2001:db8:2::2</code> – útvonal követés névfeloldás nélkül
+    </div>
+
+    <hr>
+    <p><strong>Záró megjegyzés a 3. blokkhoz:</strong> Ez a teljes, percre bontott részletes kifejtés tartalmazza az összes szükséges elemet a duál stack konfiguráció, ping6, traceroute6 és statikus IPv6 routing oktatásához. A diákok a gyakorlati feladatokkal magabiztosan fogják tudni konfigurálni a routereket és PC-ket, valamint ellenőrizni a kapcsolatokat. A következő blokkban a dinamikus címkiosztással (SLAAC) folytatjuk.</p>
+</div>
+</body>
+</html>

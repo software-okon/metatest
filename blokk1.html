@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv6 tananyag – 1. blokk: Bevezetés és címzés alapjai (teljes, részletes kifejtés)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .document {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.12);
+            padding: 45px 50px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: #0b3b4f;
+            border-bottom: 3px solid #1e6f5c;
+            display: inline-block;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.7rem;
+            margin: 1.8rem 0 1rem;
+            color: #1e6f5c;
+            border-left: 5px solid #1e6f5c;
+            padding-left: 20px;
+        }
+        h3 {
+            font-size: 1.4rem;
+            margin: 1.3rem 0 0.6rem;
+            color: #2c5282;
+        }
+        h4 {
+            font-size: 1.1rem;
+            margin: 1rem 0 0.4rem;
+            color: #2d3748;
+        }
+        .badge {
+            background: #1e6f5c;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 40px;
+            padding: 4px 12px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid #cad2db;
+            padding: 10px 12px;
+            vertical-align: top;
+        }
+        th {
+            background: #eef2f5;
+            font-weight: 600;
+        }
+        code {
+            background: #f0f2f5;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            color: #c44536;
+        }
+        pre {
+            background: #1e2a36;
+            color: #f0f3f8;
+            padding: 16px;
+            border-radius: 14px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin: 20px 0;
+        }
+        hr {
+            margin: 40px 0;
+            border: none;
+            border-top: 2px dashed #bdd3e8;
+        }
+        ul, ol {
+            margin: 10px 0 10px 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fef7e0;
+            border-left: 5px solid #f3b33d;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .tip {
+            background: #e0f2fe;
+            border-left: 5px solid #0284c7;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .time-slot {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+        @media (max-width: 700px) {
+            .document {
+                padding: 20px;
+            }
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+    <h1>IPv6 címzés és dinamikus címkiosztás (SLAAC)<br>1. blokk – Bevezetés, címzés alapjai</h1>
+    <p><strong>Részletes, percre bontott tanmenet</strong> – 2 × 45 perc (teljes kifejtés)<br>
+    <strong>Készítette:</strong> Szakmai informatikai oktató (20+ év tapasztalat)<br>
+    <strong>Célcsoport:</strong> 11–12. évfolyamos technikumi tanulók<br>
+    <strong>Környezet:</strong> Tábla, projektor, feladatlap, számítógép (parancssori bemutatóhoz)</p>
+
+    <hr>
+
+    <h2>1. tanóra – Miért van szükség IPv6-ra? <span class="time-slot">45 perc</span></h2>
+
+    <h3>📌 0–5 perc: Ráhangolódás, motiváció</h3>
+    <ul>
+        <li>Kérdés a diákokhoz: <em>„Ki találkozott már olyannal, hogy „nincs több szabad IP-cím” vagy hogy a routere nem kapott publikus IPv4 címet a szolgáltatótól?”</em></li>
+        <li>Válaszok összegyűjtése: NAT, CGNAT, lakossági csomagok, stb.</li>
+        <li>Ígéret: <em>„A mai naptól kezdve egy olyan világba nyertek betekintést, ahol a címek mennyisége gyakorlatilag végtelen, és nincs szükség a címfordítás erőltetésére.”</em></li>
+    </ul>
+
+    <h3>📅 5–15 perc: Az IPv4 kimerülésének tényei és következményei</h3>
+    <ul>
+        <li><strong>Idővonal:</strong>
+            <ul>
+                <li>1981: IPv4 megjelenés (2<sup>32</sup> = ~4,3 milliárd cím)</li>
+                <li>1990-es évek eleje: előrejelzés a kimerülésről</li>
+                <li>2011. február 3.: IANA kiosztotta az utolsó /8-as blokkokat</li>
+                <li>2015–2019: RIR-ek (pl. RIPE NCC) is kimerültek</li>
+            </ul>
+        </li>
+        <li><strong>Következmények:</strong>
+            <ul>
+                <li>NAT terjedése (otthon, céges hálózatok)</li>
+                <li>CGNAT (ISP szintű NAT) – problémák: játékok, P2P, VoIP, port forwarding lehetetlen</li>
+                <li>IPv6 csak lassan terjed – „halogatás kultúrája”</li>
+            </ul>
+        </li>
+        <li><strong>Tények:</strong> 2025-re Google statisztikák szerint kb. 40-45% IPv6 használat (országonként változó); Magyarország ~30% körül.</li>
+    </ul>
+
+    <h3>✨ 15–30 perc: Miért jobb az IPv6? Fő előnyök</h3>
+    <ul>
+        <li><strong>Óriási címtér:</strong>
+            <ul>
+                <li>2<sup>128</sup> = 340.282.366.920.938.463.463.374.607.431.768.211.456</li>
+                <li>Szemléltetés: <em>„Ha minden négyzetmilliméterre 100 IPv6 címet teszünk, a Föld teljes felületét többszörösen lefedhetjük.”</em></li>
+                <li>Analógia: IPv4 ≈ egy marék homok, IPv6 ≈ az összes homok a Föld összes strandján</li>
+            </ul>
+        </li>
+        <li><strong>Nincs szükség NAT-re:</strong> minden eszköz kaphat egyedi globális címet; igazi end-to-end kapcsolat (P2P, VoIP, játékok javulnak).</li>
+        <li><strong>Beépített biztonság (IPsec)</strong> – opcionális, de támogatott.</li>
+        <li><strong>Egyszerűbb fejrész (header):</strong> 40 bájt fix (nincs opció mező, azokat extension header-be tették); gyorsabb router feldolgozás.</li>
+        <li><strong>Nincs broadcast</strong> – helyette multicast és anycast.</li>
+        <li><strong>Automatikus címkonfiguráció (SLAAC)</strong> – plug-and-play.</li>
+    </ul>
+
+    <h3>❌ 30–40 perc: Tévhitek eloszlatása</h3>
+    <ul>
+        <li><strong>Tévhit 1:</strong> „Az IPv6 bonyolult” – Valójában logikusabb: nincs osztály, minden /64, nincs subnet mask számolgatás a fejben.</li>
+        <li><strong>Tévhit 2:</strong> „Az IPv6 nem kompatibilis az IPv4-gyel” – Duál stack, tunneling, NAT64 segítségével együtt élhetnek.</li>
+        <li><strong>Tévhit 3:</strong> „Az IPv6 lassabb” – Kutatások szerint gyorsabb, mert a routerek kevesebb számítást végeznek.</li>
+        <li><strong>Tévhit 4:</strong> „Csak nagy cégeknek kell” – De minden IoT eszköznek kellene címet adni.</li>
+    </ul>
+
+    <h3>📝 40–45 perc: Összefoglalás + előzetes a következő órához</h3>
+    <ul>
+        <li>Röviden: IPv6 cím = 128 bit, 16 bájt, hexadecimális reprezentáció.</li>
+        <li>Előzetes házi feladat: <em>„Gondolkozzatok, hogyan írhatnátok le egy 128 bites számot emberi olvasható formában.”</em></li>
+    </ul>
+
+    <hr>
+
+    <h2>2. tanóra – IPv6 cím felépítése, rövidítés, tömörítés <span class="time-slot">45 perc</span></h2>
+
+    <h3>🔄 0–5 perc: Ismétlés, ráhangolódás</h3>
+    <ul>
+        <li>Gyors visszakérdezés az előző óra tanulságairól: <em>„Mondjatok egy okot, miért kell az IPv6!”</em></li>
+        <li>Bejelentés: <em>„Most megtanuljuk a címek helyes írásmódját – ez az alapja minden további konfigurációnak.”</em></li>
+    </ul>
+
+    <h3>🔢 5–20 perc: A cím formátuma</h3>
+    <ul>
+        <li>128 bit = 16 bájt = 32 hexa karakter</li>
+        <li>Csoportosítás: 8 darab 16 bites blokk, kettősponttal elválasztva</li>
+        <li>Minta: <code>XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX</code> (ahol X = hexa számjegy 0-9, A-F)</li>
+        <li>Példa: <code>2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></li>
+        <li>Fontos: A kis- és nagybetű nem számít (de a gyakorlatban kisbetűt használjuk)</li>
+        <li>Táblán közösen: Írjunk fel egy címet, és nevezzük meg az egyes részeket (pl. globális prefix, alhálózati azonosító, interfész azonosító)</li>
+    </ul>
+
+    <h3>✂️ 20–35 perc: Rövidítési szabályok – Lépésről lépésre</h3>
+    <ul>
+        <li><strong>1. szabály: Vezető nullák elhagyása</strong> – minden 16 bites mezőből
+            <ul>
+                <li>Példa: <code>0db8</code> → <code>db8</code></li>
+                <li>Példa: <code>0001</code> → <code>1</code></li>
+                <li><code>2001:0db8:0000:0000:0000:0000:0000:0001</code> → <code>2001:db8:0:0:0:0:0:1</code></li>
+            </ul>
+        </li>
+        <li><strong>2. szabály: Nullák tömörítése (::)</strong> – egymást követő, teljesen nullákból álló mezők helyettesíthetők <code>::</code>-vel
+            <ul>
+                <li><strong>Feltétel:</strong> Csak egyszer használható egy címen belül!</li>
+                <li><code>2001:db8:0:0:0:0:0:1</code> → <code>2001:db8::1</code></li>
+                <li><code>fe80:0:0:0:0:0:0:1</code> → <code>fe80::1</code></li>
+                <li><strong>Ellenpélda (hibás):</strong> <code>2001::db8::1</code> (két ::)</li>
+            </ul>
+        </li>
+        <li><strong>Speciális címek:</strong>
+            <ul>
+                <li>Loopback: <code>::1</code></li>
+                <li>Meghatározatlan cím: <code>::</code></li>
+                <li>IPv4 leképezett: <code>::ffff:192.0.2.1</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>📝 35–43 perc: Gyakorló feladatok – páros munka vagy egyéni</h3>
+    <p>Kiosztjuk az alábbi feladatlapot (nyomtatható). A diákok önállóan vagy párban dolgoznak 8 percen keresztül.</p>
+    <p><strong>Feladatlap – IPv6 cím tömörítése és kiterjesztése</strong></p>
+    <table>
+        <thead><tr><th>Eredeti cím</th><th>Tömörített cím (megoldás)</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>2001:0db8:0000:0000:0000:0000:0000:0001</code></td><td><code>2001:db8::1</code></td></tr>
+            <tr><td><code>fe80:0000:0000:0000:0200:ff:fe00:1234</code></td><td><code>fe80::200:ff:fe00:1234</code></td></tr>
+            <tr><td><code>ff02:0000:0000:0000:0000:0000:0000:0002</code></td><td><code>ff02::2</code></td></tr>
+            <tr><td><code>2001:0db8:85a3:0000:0000:8a2e:0370:7334</code></td><td><code>2001:db8:85a3::8a2e:370:7334</code></td></tr>
+        </tbody>
+    </table>
+    <p><strong>Kiterjesztési feladatok (a másik irány):</strong></p>
+    <table>
+        <thead><tr><th>Tömörített cím</th><th>Kiterjesztett cím</th></tr>
+        </thead>
+        <tbody>
+            <tr><td><code>2001:db8::2</code></td><td><code>2001:0db8:0000:0000:0000:0000:0000:0002</code></td></tr>
+            <tr><td><code>::1</code></td><td><code>0000:0000:0000:0000:0000:0000:0000:0001</code></td></tr>
+            <tr><td><code>fe80::1</code></td><td><code>fe80:0000:0000:0000:0000:0000:0000:0001</code></td></tr>
+        </tbody>
+    </table>
+    <p><strong>Hibás címek felismerése:</strong> Húzd alá a hibásan tömörített címeket (a kettős kettőspont csak egyszer használható):</p>
+    <ul>
+        <li><code>2001:db8::1234::1</code> – <strong>hibás</strong></li>
+        <li><code>fe80::1234:5678</code> – helyes</li>
+        <li><code>::ffff:192.0.2.1</code> – helyes (IPv4 embedded formátum)</li>
+        <li><code>2001::db8::1</code> – <strong>hibás</strong></li>
+    </ul>
+
+    <h3>✅ 43–45 perc: Megoldások közös ellenőrzése, házi feladat kiadása</h3>
+    <ul>
+        <li>Kivetítjük a megoldókulcsot (a táblázatokban szereplő válaszok).</li>
+        <li>Néhány diák felolvassa a saját tömörített vagy kiterjesztett címét.</li>
+        <li><strong>Házi feladat (rövid, 5 perc alatt végezhető):</strong>
+            <br><em>„Tömörítsd a saját otthoni vagy iskolai számítógéped IPv4 címét IPv4-leképezett formátumba (<code>::ffff:192.168.1.100</code>), majd tömörítsd a szabályok szerint!”</em>
+        </li>
+    </ul>
+
+    <hr>
+
+    <h2>Oktatói segédanyagok az 1. blokkhoz</h2>
+
+    <h3>📊 Prezentáció vázlat (diafejlécek)</h3>
+    <ol>
+        <li>Cím: IPv6 címzés alapjai</li>
+        <li>IPv4 kimerülése (grafikon: szabad /8-as blokkok csökkenése)</li>
+        <li>IPv6 fő előnyei (lista)</li>
+        <li>IPv6 cím mérete (2<sup>128</sup> szemléltetés)</li>
+        <li>Cím felépítése (ábra: 128 bit = 8×16 bit)</li>
+        <li>Példa cím (színezve a mezők)</li>
+        <li>Rövidítés – vezető nullák (animáció)</li>
+        <li>Rövidítés – <code>::</code> használata (megjegyzés: csak egyszer!)</li>
+        <li>Gyakorló feladatok (3-4 cím)</li>
+        <li>Speciális címek (<code>::</code>, <code>::1</code>, <code>::ffff:a.b.c.d</code>)</li>
+        <li>Összefoglaló táblázat</li>
+    </ol>
+
+    <h3>🧑‍🏫 Táblai vázlat (kivetítésre vagy flipchartra)</h3>
+    <pre>
+IPv6 cím: 128 bit = 16 bájt = 32 hexa
+Forma: XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX:XXXX
+
+Példa:
+2001:0db8:85a3:0000:0000:8a2e:0370:7334
+
+Rövidítés:
+1. Vezető nullák elhagyása:
+   0db8 → db8, 0000 → 0, 0370 → 370
+   → 2001:db8:85a3:0:0:8a2e:370:7334
+2. Egymás utáni nullás mezők tömörítése (::):
+   2001:db8:85a3::8a2e:370:7334
+
+Szabály: :: csak egyszer!
+
+Speciális:
+::1          = localhost
+::           = meghatározatlan
+::ffff:192.0.2.1 = IPv4 leképzett
+    </pre>
+
+    <div class="tip">
+        <strong>💡 Technikai bemutató (ha van számítógép és projektor):</strong><br>
+        - Windows: <code>ipconfig</code> – megmutatni az IPv6 Link-Local címet (<code>fe80::...</code>)<br>
+        - Linux: <code>ip -6 addr show</code> – ugyanez<br>
+        - Ping loopback: <code>ping ::1</code> (Windows/Linux egyaránt működik)<br>
+        - Magyarázat: <em>„Ez a localhost, ugyanazt csinálja, mint a 127.0.0.1, csak IPv6-on.”</em>
+    </div>
+
+    <div class="note">
+        <strong>🏠 Házi feladat (írásban):</strong><br>
+        „Tömörítsd a saját otthoni vagy iskolai számítógéped IPv4 címét úgy, mintha az egy IPv6 cím lenne (a tizedes pontokat cseréld kettőspontra, és egészítsd ki nullákkal 8 mezőre). Ezután tömörítsd a szabályok szerint!”<br>
+        Segítség: Alakítsátok át az IPv4 címet hexadecimálisra, majd írjátok be az utolsó 32 bitbe, az első 96 bit legyen <code>::ffff</code>. Pl.: <code>::ffff:192.168.1.100</code>.
+    </div>
+
+    <hr>
+    <p><strong>Záró megjegyzés az 1. blokkhoz:</strong> Ez a teljes, percre bontott részletes kifejtés tartalmazza az összes szükséges elemet a bevezető órához. A diákok a gyakorlati feladatokkal és a vizuális segédanyagokkal magabiztosan fogják elsajátítani az IPv6 címek felépítését és tömörítését. A következő blokkban a címtípusokkal és alhálózatképzéssel folytatjuk.</p>
+</div>
+</body>
+</html>

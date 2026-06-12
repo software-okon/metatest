@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPv6 tananyag – 2. blokk: Címtípusok és alhálózatképzés (teljes, részletes kifejtés)</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #eef2f7;
+            font-family: 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+            padding: 40px 20px;
+            line-height: 1.5;
+        }
+        .document {
+            max-width: 1100px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 35px -10px rgba(0,0,0,0.12);
+            padding: 45px 50px;
+        }
+        h1 {
+            font-size: 2.2rem;
+            color: #0b3b4f;
+            border-bottom: 3px solid #1e6f5c;
+            display: inline-block;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            font-size: 1.7rem;
+            margin: 1.8rem 0 1rem;
+            color: #1e6f5c;
+            border-left: 5px solid #1e6f5c;
+            padding-left: 20px;
+        }
+        h3 {
+            font-size: 1.4rem;
+            margin: 1.3rem 0 0.6rem;
+            color: #2c5282;
+        }
+        h4 {
+            font-size: 1.1rem;
+            margin: 1rem 0 0.4rem;
+            color: #2d3748;
+        }
+        .badge {
+            background: #1e6f5c;
+            color: white;
+            font-size: 0.7rem;
+            border-radius: 40px;
+            padding: 4px 12px;
+            display: inline-block;
+            margin-bottom: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.9rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        th, td {
+            border: 1px solid #cad2db;
+            padding: 10px 12px;
+            vertical-align: top;
+        }
+        th {
+            background: #eef2f5;
+            font-weight: 600;
+        }
+        code {
+            background: #f0f2f5;
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-family: 'Fira Code', 'Cascadia Code', monospace;
+            font-size: 0.85rem;
+            color: #c44536;
+        }
+        pre {
+            background: #1e2a36;
+            color: #f0f3f8;
+            padding: 16px;
+            border-radius: 14px;
+            overflow-x: auto;
+            font-family: 'Fira Code', monospace;
+            font-size: 0.8rem;
+            margin: 20px 0;
+        }
+        hr {
+            margin: 40px 0;
+            border: none;
+            border-top: 2px dashed #bdd3e8;
+        }
+        ul, ol {
+            margin: 10px 0 10px 25px;
+        }
+        li {
+            margin: 5px 0;
+        }
+        .note {
+            background: #fef7e0;
+            border-left: 5px solid #f3b33d;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .tip {
+            background: #e0f2fe;
+            border-left: 5px solid #0284c7;
+            padding: 12px 18px;
+            border-radius: 12px;
+            margin: 20px 0;
+        }
+        .time-slot {
+            font-family: monospace;
+            background: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: normal;
+            margin-left: 10px;
+        }
+        @media (max-width: 700px) {
+            .document {
+                padding: 20px;
+            }
+            th, td {
+                padding: 6px 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="document">
+    <h1>IPv6 címzés és dinamikus címkiosztás (SLAAC)<br>2. blokk – Címtípusok és alhálózatképzés</h1>
+    <p><strong>Részletes, percre bontott tanmenet</strong> – 2 × 45 perc (teljes kifejtés)<br>
+    <strong>Készítette:</strong> Szakmai informatikai oktató (20+ év tapasztalat)<br>
+    <strong>Célcsoport:</strong> 11–12. évfolyamos technikumi tanulók<br>
+    <strong>Környezet:</strong> Tábla, projektor, számítógépek (Packet Tracer vagy valós terminál), feladatlap</p>
+
+    <hr>
+
+    <h2>3. tanóra – IPv6 címtípusok <span class="time-slot">45 perc</span></h2>
+
+    <h3>🔄 0–5 perc: Ismétlés és ráhangolódás</h3>
+    <ul>
+        <li>Gyors kérdések az előző blokk anyagából:
+            <ul>
+                <li><em>„Hogyan tömörítenéd a <code>fe80:0000:0000:0000:0000:0000:0000:0001</code> címet?”</em> → <code>fe80::1</code></li>
+                <li><em>„Mekkora egy IPv6 cím bájtokban?”</em> → 16 bájt</li>
+            </ul>
+        </li>
+        <li>Bejelentés: <em>„Most már tudjuk, hogyan kell felírni egy IPv6 címet. De mit jelentenek a címek elején lévő számok? Ma megtanuljuk, hogyan osztályozzuk őket.”</em></li>
+    </ul>
+
+    <h3>🎯 5–20 perc: A három fő típus: Unicast, Anycast, Multicast</h3>
+    <ul>
+        <li><strong>Emlékeztető:</strong> IPv4-ben volt unicast, broadcast, multicast. IPv6-ban nincs broadcast, helyette anycast és multicast.</li>
+        <li><strong>Unicast</strong> (egy az egyhez) – három alaptípus:
+            <ul>
+                <li><strong>Global Unicast (GUA)</strong> – nyilvános, interneten route-olható<br>
+                    Prefix: <code>2000::/3</code> (jelenleg a <code>2xxx</code> és <code>3xxx</code> kezdetű címek)<br>
+                    Példa: <code>2001:db8:1::100</code> – ezt a RIR (pl. RIPE NCC) vagy az ISP osztja ki.</li>
+                <li><strong>Unique Local (ULA)</strong> – belső hálózatokra, nem route-olható a globális interneten (hasonló a privát IPv4-hez)<br>
+                    Prefix: <code>fc00::/7</code>, de a gyakorlatban <code>fd00::/8</code><br>
+                    Példa: <code>fd00:1234:5678::/48</code> – 40 bites véletlen rész, nem ütközik más ULA-val.</li>
+                <li><strong>Link-Local (LLA)</strong> – csak az adott láncszegmensen érvényes<br>
+                    Prefix: <code>fe80::/10</code> (gyakorlatban <code>fe80::/64</code>)<br>
+                    Automatikusan létrejön minden IPv6-os interfészen (még konfiguráció nélkül is).<br>
+                    Példa: <code>fe80::1</code>, <code>fe80::215:5dff:fe00:102</code><br>
+                    <strong>Fontos:</strong> A routerer ezen a címen kommunikálnak egymással (pl. OSPFv3, RA-k küldése).</li>
+            </ul>
+        </li>
+        <li><strong>Anycast</strong> (egy a legközelebbihez)
+            <ul>
+                <li>Egy cím több eszközön is jelen lehet; a forrás a topológiailag legközelebbihez csatlakozik.</li>
+                <li>Használat: root DNS szerverek, CDN-ek.</li>
+                <li>Nincs külön prefix; bármely unicast cím lehet anycast is (ha felcímkézzük).</li>
+            </ul>
+        </li>
+        <li><strong>Multicast</strong> (egy a csoporthoz)
+            <ul>
+                <li>Prefix: <code>ff00::/8</code></li>
+                <li><strong>Fontos csoportok:</strong>
+                    <ul>
+                        <li><code>ff02::1</code> – minden IPv6 képes node az adott szegmensen</li>
+                        <li><code>ff02::2</code> – minden router az adott szegmensen</li>
+                        <li><code>ff02::1:ff00:0000/104</code> – solicited-node multicast (NDP-hez)</li>
+                    </ul>
+                </li>
+                <li><strong>Demonstráció:</strong> <code>ping ff02::1</code> (Windows/Linux) – minden eszköz válaszol a link-local címéről? (Nem mind, de a legtöbb igen.)</li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>🔗 20–30 perc: Mélyebben a Link-Local címekről</h3>
+    <ul>
+        <li><strong>Miért fontos?</strong>
+            <ul>
+                <li>Nincs szükség globális címre ahhoz, hogy két eszköz ugyanazon a szegmensen kommunikáljon.</li>
+                <li>A routerek RA-kat (Router Advertisement) Link-Local forrással küldenek.</li>
+                <li>Az alapértelmezett gateway a PC-n is Link-Local cím lesz (nem GUA!).</li>
+            </ul>
+        </li>
+        <li><strong>Hogyan jön létre?</strong>
+            <ul>
+                <li>Az interfész automatikusan generál egy <code>fe80::/64</code> prefixet és egy interfész-azonosítót (általában EUI-64 vagy véletlen).</li>
+                <li>DAD (Duplicate Address Detection) megelőzi az ütközést.</li>
+            </ul>
+        </li>
+        <li><strong>Parancssori megfigyelés:</strong>
+            <ul>
+                <li>Windows: <code>netsh interface ipv6 show neighbors</code></li>
+                <li>Linux: <code>ip -6 addr show</code> (keress <code>fe80::</code> kezdetű címeket)</li>
+                <li>Cisco: <code>show ipv6 interface brief</code></li>
+            </ul>
+        </li>
+        <li><strong>Érdekesség:</strong> A Link-Local címek az adott interfész MAC címéből képzett EUI-64-ből is származhatnak.</li>
+    </ul>
+
+    <h3>📝 30–40 perc: Gyakorlati feladat – címfelismerés</h3>
+    <p>Kivetítünk vagy kiosztunk 8-10 IPv6 címet. A diákoknak meg kell mondaniuk, hogy milyen típus (GUA, ULA, Link-Local, Multicast).</p>
+    <p><strong>Példák:</strong></p>
+    <ul>
+        <li><code>2001:db8:100:200::1</code> → GUA</li>
+        <li><code>fd00::1</code> → ULA</li>
+        <li><code>fe80::1</code> → Link-Local</li>
+        <li><code>ff02::1</code> → Multicast (minden node)</li>
+        <li><code>::1</code> → Loopback (unicast, de speciális)</li>
+        <li><code>2001:db8::1</code> → GUA</li>
+        <li><code>fc00::1</code> → ULA (az <code>fc00::/7</code> elméleti, de a gyakorlatban <code>fd00::/8</code>)</li>
+        <li><code>ff02::2</code> → Multicast (minden router)</li>
+    </ul>
+    <p>Rövid magyarázat anycastra: pl. <code>2001:4860:4860::8888</code> (Google DNS) – az egy anycast cím, több helyen is elérhető.</p>
+
+    <h3>📌 40–45 perc: Összefoglalás + előzetes az alhálózatképzéshez</h3>
+    <ul>
+        <li>Táblán rögzítjük a fő prefixeket: <code>2000::/3</code> (GUA), <code>fe80::/10</code> (LLA), <code>fd00::/8</code> (ULA), <code>ff00::/8</code> (multicast).</li>
+        <li>Kérdés: <em>„Hány /64-es hálózat fér el egy /48-as blokkban?”</em> – Ezt a következő órán részletesen vesszük.</li>
+    </ul>
+
+    <hr>
+
+    <h2>4. tanóra – Prefixek és alhálózatképzés <span class="time-slot">45 perc</span></h2>
+
+    <h3>🔄 0–5 perc: Ismétlés a típusokból</h3>
+    <ul>
+        <li>Gyors szóbeli kérdezés:
+            <ul>
+                <li><em>„Melyik prefix jelöli a Link-Local címeket?”</em> → <code>fe80::/10</code></li>
+                <li><em>„Mi a különbség a GUA és az ULA között?”</em> → GUA globálisan route-olható, ULA csak belső.</li>
+                <li><em>„Milyen multicast címet használunk, hogy minden routert elérjünk?”</em> → <code>ff02::2</code></li>
+            </ul>
+        </li>
+    </ul>
+
+    <h3>📏 5–20 perc: Prefix hossz és az ajánlott /64</h3>
+    <ul>
+        <li><strong>CIDR jelölés</strong> – ugyanaz, mint IPv4-nél: pl. <code>2001:db8:1::/48</code> (első 48 bit fix, maradék 80 bit változhat).</li>
+        <li><strong>Miért a /64 a legtöbb esetben a minimum?</strong>
+            <ul>
+                <li>SLAAC működéséhez /64 szükséges (az EUI-64 vagy random 64 bit az interfész azonosítója).</li>
+                <li>Az IPv6 tervezési irányelv: <strong>soha ne használj /64-nél kisebb alhálózatot</strong> (kivéve pont-pont kapcsolat – ott javasolt a /127 a ping-pong támadások elkerülésére).</li>
+            </ul>
+        </li>
+        <li><strong>Miért nem nagyobb?</strong> (pl. /120) – Mert akkor az interfész azonosító nem lenne 64 bites, és a SLAAC nem működik.</li>
+        <li><strong>Példák gyakori prefixekre:</strong>
+            <ul>
+                <li>ISP kap egy <code>/32</code>-t a RIR-től.</li>
+                <li>A cég/otthon <code>/48</code>-at kap az ISP-től (ajánlott).</li>
+                <li>A <code>/48</code>-on belül 65536 darab <code>/64</code> alhálózat lehet.</li>
+                <li>Egy nagyvállalat <code>/40</code>-et kérhet.</li>
+            </ul>
+        </li>
+        <li><strong>Táblán szemléltetés:</strong>
+            <pre>/48: 2001:db8:abcd:xxxx::/64
+/48 prefix (48 bit) | 16 bit alhálózat | 64 bit host</pre>
+        </li>
+    </ul>
+
+    <h3>🧮 20–35 perc: Alhálózati számítások – lépésről lépésre</h3>
+    <ul>
+        <li><strong>Szabály:</strong> Az alhálózatok számát a prefix hossz különbsége adja: <code>2<sup>(új_prefix_hossz - régi_prefix_hossz)</sup></code></li>
+        <li><strong>Példa 1:</strong> Adott <code>/48</code> (pl. <code>2001:db8:abcd::/48</code>). Hány <code>/64</code>-et tudunk képezni?
+            <br><code>2<sup>(64-48)</sup> = 2<sup>16</sup> = 65536</code>
+            <br>Az első /64: <code>2001:db8:abcd:0::/64</code>
+            <br>A második: <code>2001:db8:abcd:1::/64</code>
+            <br>Az utolsó: <code>2001:db8:abcd:ffff::/64</code>
+        </li>
+        <li><strong>Példa 2:</strong> Adott <code>/32</code>. Hány <code>/48</code>-at tudunk képezni?
+            <br><code>2<sup>(48-32)</sup> = 2<sup>16</sup> = 65536</code>
+        </li>
+        <li><strong>Példa 3:</strong> Adott <code>/56</code> (lakossági ISP delegáció). Hány <code>/64</code>-et?
+            <br><code>2<sup>(64-56)</sup> = 2<sup>8</sup> = 256</code> (ezért szokás a /56 otthoni felhasználásra, 256 VLAN/hálózat elég).</li>
+        <li><strong>Számolás fejben:</strong>
+            <br>A prefixben a változó részt hexadecimális számként kell növelni.
+            <br>Pl. <code>/48</code> → <code>/64</code>: a 4. mező (a 3. kettőspont utáni) lesz az alhálózati azonosító (16 bit, azaz 4 hexa karakter).
+            <br><code>2001:db8:abcd:</code><strong><code>1234</code></strong><code>::/64</code> – itt a <code>1234</code> az alhálózat sorszáma.
+        </li>
+    </ul>
+
+    <h3>✍️ 35–43 perc: Gyakorlati feladat – alhálózati tervező táblázat kitöltése</h3>
+    <p>Kiosztjuk az alábbi táblázatot. Adott <code>2001:db8:1a::/48</code>. Készíts 5 darab <code>/64</code> alhálózatot, add meg a hálózati címet és az első használható címet (gateway).</p>
+    <table>
+        <thead><tr><th>Alhálózat sorszáma</th><th>/64 prefix</th><th>Hálózati cím</th><th>Gateway (::1)</th></tr>
+        </thead>
+        <tbody>
+            <tr><td>0</td><td><code>2001:db8:1a:0::/64</code></td><td><code>2001:db8:1a:0::</code></td><td><code>2001:db8:1a:0::1</code></td></tr>
+            <tr><td>1</td><td><code>2001:db8:1a:1::/64</code></td><td><code>2001:db8:1a:1::</code></td><td><code>2001:db8:1a:1::1</code></td></tr>
+            <tr><td>2</td><td><code>2001:db8:1a:2::/64</code></td><td><code>2001:db8:1a:2::</code></td><td><code>2001:db8:1a:2::1</code></td></tr>
+            <tr><td>3</td><td><code>2001:db8:1a:3::/64</code></td><td><code>2001:db8:1a:3::</code></td><td><code>2001:db8:1a:3::1</code></td></tr>
+            <tr><td>4</td><td><code>2001:db8:1a:4::/64</code></td><td><code>2001:db8:1a:4::</code></td><td><code>2001:db8:1a:4::1</code></td></tr>
+        </tbody>
+    </table>
+    <p><strong>Bónusz:</strong> Mennyi a maximális számú /64? <code>2<sup>16</sup> = 65536</code> (0-tól ffff-ig)</p>
+    <p>A diákok párokban dolgoznak, a tanár segít.</p>
+
+    <h3>📌 43–45 perc: Összefoglalás, házi feladat, előzetes a következő blokkhoz</h3>
+    <ul>
+        <li><strong>Összefoglaló táblázat a típusokról:</strong>
+            <table>
+                <tr><th>Típus</th><th>Prefix</th><th>Használat</th></tr>
+                <tr><td>Global Unicast</td><td><code>2000::/3</code></td><td>Internet</td></tr>
+                <tr><td>Unique Local</td><td><code>fd00::/8</code></td><td>Belső hálózat</td></tr>
+                <tr><td>Link-Local</td><td><code>fe80::/10</code></td><td>Automatikus, láncon belüli</td></tr>
+                <tr><td>Multicast</td><td><code>ff00::/8</code></td><td>Egy-többhöz</td></tr>
+            </table>
+        </li>
+        <li><strong>Házi feladat (írásban):</strong>
+            <br><em>„Egy cég megkapta a <code>2a01:1234:abcd::/48</code> címtartományt. Tervezzetek meg 8 különböző /64-es alhálózatot (iroda, raktár, szerver, vezeték nélküli, stb.). Írjátok fel mindegyik hálózati címét és az első használható címet (gateway).”</em>
+        </li>
+        <li><strong>Előzetes:</strong> <em>„Következő alkalommal duál stacket konfigurálunk – a routerek és PC-k egyszerre beszélnek IPv4 és IPv6 nyelven. Hozzatok magatokkal Packet Tracert vagy jegyzetfüzetet.”</em></li>
+    </ul>
+
+    <hr>
+
+    <h2>Oktatói segédanyagok a 2. blokkhoz</h2>
+
+    <h3>📊 Prezentáció vázlat (diafejlécek)</h3>
+    <ol>
+        <li>Cím: IPv6 címtípusok és alhálózatképzés</li>
+        <li>Unicast – három fő fajta (GUA, ULA, LLA)</li>
+        <li>Global Unicast (GUA) – <code>2000::/3</code>, példák</li>
+        <li>Unique Local (ULA) – <code>fd00::/8</code>, véletlen 40 bites rész</li>
+        <li>Link-Local (LLA) – <code>fe80::/10</code>, automatikus generálás</li>
+        <li>Multicast – <code>ff00::/8</code>, fontos csoportcímek</li>
+        <li>Anycast – „legközelebbi” elv</li>
+        <li>Prefixek gyakorlati jelentősége (<code>/32</code>, <code>/48</code>, <code>/56</code>, <code>/64</code>)</li>
+        <li>Miért <code>/64</code>? – SLAAC, EUI-64</li>
+        <li>Alhálózati számítás – képlet: <code>2<sup>(új - régi)</sup></code></li>
+        <li>Gyakorló feladat (táblázat kitöltése)</li>
+        <li>Összefoglaló táblázat</li>
+    </ol>
+
+    <h3>🧑‍🏫 Táblai vázlat (kivetítésre vagy flipchartra)</h3>
+    <pre>
+IPv6 TIPUSOK:
+
+Unicast (1-to-1):
+  • Global Unicast (GUA): 2000::/3
+  • Unique Local (ULA): fc00::/7 → fd00::/8
+  • Link-Local (LLA): fe80::/10
+
+Anycast (1-to-nearest): bármilyen unicast cím
+
+Multicast (1-to-many): ff00::/8
+  ff02::1 = all nodes
+  ff02::2 = all routers
+
+ALHÁLÓZATKÉPZÉS:
+
+/48-ból /64: 2^(64-48)=65536 db
+Példa: 2001:db8:abcd::/48
+  alhálózat 0: 2001:db8:abcd:0::/64
+  alhálózat 1: 2001:db8:abcd:1::/64
+  ...
+  alhálózat ffff: 2001:db8:abcd:ffff::/64
+    </pre>
+
+    <div class="tip">
+        <strong>💡 Parancssori bemutató (ha van gép):</strong><br>
+        - Link-Local megjelenítése:<br>
+        &nbsp;&nbsp;Windows: <code>ipconfig</code> – keressük a <code>fe80::</code> kezdetű sort<br>
+        &nbsp;&nbsp;Linux: <code>ip -6 addr show scope link</code><br>
+        - Multicast csomagok figyelése (Wireshark vagy tcpdump):<br>
+        &nbsp;&nbsp;Linux: <code>sudo tcpdump -i eth0 ip6 and multicast</code><br>
+        &nbsp;&nbsp;Windows: Wireshark, szűrő: <code>ipv6.dst == ff02::1</code><br>
+        - Ping a link-local címre:<br>
+        &nbsp;&nbsp;Linux: <code>ping fe80::1%eth0</code> (fontos a % és interfész név)<br>
+        &nbsp;&nbsp;Windows: <code>ping fe80::1%4</code> (ahol 4 a interfész index – <code>netsh int ipv6 show int</code>)
+    </div>
+
+    <div class="note">
+        <strong>🏠 Házi feladat (írásban):</strong><br>
+        „Egy cég megkapta a <code>2a01:1234:abcd::/48</code> címtartományt. Tervezzetek meg 8 különböző /64-es alhálózatot (iroda, raktár, szerver, vezeték nélküli, stb.). Írjátok fel mindegyik hálózati címét és az első használható címet (gateway).”
+    </div>
+
+    <div class="tip">
+        <strong>⚠️ Gyakori hibák és magyarázatuk:</strong>
+        <ul>
+            <li><strong>Hiba:</strong> A diákok azt hiszik, hogy a Link-Local cím is route-olható.<br>
+                <strong>Magyarázat:</strong> Nem, mert a <code>fe80::/10</code> soha nem kerül a routing táblákba (csak link scope).</li>
+            <li><strong>Hiba:</strong> Két eszköz ugyanazon a szegmensen nem tud pingelni, mert nem adtak globális címet.<br>
+                <strong>Megoldás:</strong> Pedig a Link-Local is elég – de meg kell adni a kimenő interfészt (<code>ping fe80::1%eth0</code>).</li>
+            <li><strong>Hiba:</strong> Összekeverik az ULA-t a GUA-val.<br>
+                <strong>Megoldás:</strong> ULA <code>fd00::/8</code>, GUA <code>2000::/3</code> – mutassunk példákat.</li>
+            <li><strong>Hiba:</strong> A <code>/64</code>-nél rövidebb prefixet használnának pont-pont kapcsolaton.<br>
+                <strong>Megoldás:</strong> Említsük meg a <code>/127</code> ajánlást (RFC 6164), de a tantervben maradjunk a <code>/64</code>-nél az egyszerűség kedvéért.</li>
+        </ul>
+    </div>
+
+    <div class="tip">
+        <strong>📚 Differenciálási lehetőségek:</strong>
+        <ul>
+            <li><strong>Gyengébbeknek:</strong> Adjunk egy kész táblázatot, ahol csak a hiányzó alhálózati azonosítókat kell beírni. Csak 4 alhálózatot kérjünk. Link-Local cím felismerésére egyszerű feladat.</li>
+            <li><strong>Erősebbeknek:</strong> Kérjünk számítást: <em>„Hány /56-os alhálózat jön ki egy /32-ből?”</em> (2<sup>24</sup> = 16,7 million). Illetve: <em>„Tervezz egy olyan elosztást, ahol egy /48-ból az első /64-et irodák kapják, a második /64-et vendég Wi-Fi, és a maradékot jövőbeli bővítésre tartjuk fenn.”</em></li>
+        </ul>
+    </div>
+
+    <div class="note">
+        <strong>📖 Kapcsolódó RFC-k (ha valakit mélyebben érdekel):</strong>
+        <ul>
+            <li>RFC 4291 – IPv6 Addressing Architecture</li>
+            <li>RFC 4193 – Unique Local IPv6 Unicast Addresses (ULA)</li>
+            <li>RFC 4291 – Link-Local címek</li>
+            <li>RFC 4291 – Multicast</li>
+            <li>RFC 6164 – Using /127 on point-to-point links</li>
+        </ul>
+    </div>
+
+    <hr>
+    <p><strong>Záró megjegyzés a 2. blokkhoz:</strong> Ez a teljes, percre bontott részletes kifejtés tartalmazza az összes szükséges elemet a címtípusok és alhálózatképzés oktatásához. A diákok a gyakorlati feladatokkal magabiztosan fogják tudni alkalmazni a prefix számításokat és felismerni a különböző IPv6 címtípusokat. A következő blokkban a duál stack konfigurációval és statikus IPv6 routinggal folytatjuk.</p>
+</div>
+</body>
+</html>
